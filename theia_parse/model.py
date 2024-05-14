@@ -20,12 +20,29 @@ class ContentElement(BaseModel):
     content: str
     language: str
 
+    def is_heading(self) -> bool:
+        return self.type.value.startswith("heading")
+
+    @property
+    def heading_level(self) -> int | None:
+        if not self.is_heading():
+            return
+        else:
+            return int(self.type.value.split("-")[-1])
+
+
+class LLMUsage(BaseModel):
+    request_tokens: int | None = None
+    response_tokens: int | None = None
+    total_tokens: int | None = None
+
 
 class DocumentPage(BaseModel):
     page_nr: int
     elements: list[ContentElement] | None
     raw_parsed: str
     raw_extracted: str
+    token_usage: LLMUsage
 
     def to_string(self) -> str:
         if self.elements:
@@ -35,7 +52,7 @@ class DocumentPage(BaseModel):
 
     def get_headings(self) -> list[ContentElement]:
         if self.elements:
-            return [e for e in self.elements if e.type.value.startswith("heading")]
+            return [e for e in self.elements if e.is_heading()]
         else:
             return []
 

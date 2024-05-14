@@ -9,15 +9,17 @@ from theia_parse.llm.__spi__ import (
     LLMExtractionResponse,
     LLMGenerationConfig,
     LLMResponse,
-    LLMUsage,
     Prompts,
 )
 from theia_parse.llm.openai.prompt_templates import DEFAULT_PROMPTS
-from theia_parse.model import ContentElement, PromptAdditions
-from theia_parse.parser.json_parser import JsonParser
+from theia_parse.llm.response_parser.json_parser import JsonParser
+from theia_parse.model import ContentElement, LLMUsage, PromptAdditions
+from theia_parse.util.log import LogFactory
 
 
-class OpenAiLM(LLM):
+class OpenAiLLM(LLM):
+    _log = LogFactory.get_logger()
+
     def __init__(
         self,
         config: LlmApiSettings,
@@ -71,11 +73,25 @@ class OpenAiLM(LLM):
         )
 
         page_data = self._json_parser.parse(response.raw)
+        error = False
+        content = []
+        if page_data is None:
+            error = True
+        else:
+            for element in page_data.get("page_content", []):
+                try:
+                    content.append(ContentElement(**element))
+                except Exception:
+                    self._log.error(
+                        "Could not create content element [raw='{0}']", element
+                    )
+                    error = True
 
         return LLMExtractionResponse(
             raw=response.raw,
-            content=[ContentElement(**e) for e in page_data["page_content"]],
+            content=content,
             usage=response.usage,
+            error=error,
         )
 
     def _bytes_image_to_data_url(
