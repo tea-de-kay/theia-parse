@@ -41,10 +41,12 @@ Make sure to:
 
 MM_EXTRACT_CONTENT_USER_PROMPT = """
 # Raw extracted pdf page text:
-{{ extracted_text }}
+{{ raw_extracted_text }}
 
+{% if previous_page %}
 # Structured previous page:
-{{ previous_page }}
+{'page_content': {{ previous_page }} }
+{% endif %}
 
 {% if previous_headings %}
 # Previous headings:

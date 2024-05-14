@@ -6,7 +6,7 @@ from openai import AzureOpenAI
 from theia_parse.llm.__spi__ import (
     LLM,
     LlmApiSettings,
-    LLMExtractionResponse,
+    LLMExtractionResult,
     LLMGenerationConfig,
     LLMResponse,
     Prompts,
@@ -57,12 +57,12 @@ class OpenAiLLM(LLM):
     def extract(
         self,
         image_data: bytes | None,
-        extracted_text: str | None,
+        raw_extracted_text: str | None,
         prompt_additions: PromptAdditions,
-    ) -> LLMExtractionResponse:
+    ) -> LLMExtractionResult:
         prompt_data = {
             **prompt_additions.model_dump(),
-            "extracted_text": extracted_text,
+            "raw_extracted_text": raw_extracted_text,
         }
 
         messages = self._assemble_messages(prompt_data, image_data)
@@ -87,7 +87,7 @@ class OpenAiLLM(LLM):
                     )
                     error = True
 
-        return LLMExtractionResponse(
+        return LLMExtractionResult(
             raw=response.raw,
             content=content,
             usage=response.usage,

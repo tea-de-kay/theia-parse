@@ -39,20 +39,21 @@ class LLMUsage(BaseModel):
 
 class DocumentPage(BaseModel):
     page_nr: int
-    elements: list[ContentElement] | None
+    content: list[ContentElement] | None
     raw_parsed: str
     raw_extracted: str
     token_usage: LLMUsage
+    error: bool = False
 
     def to_string(self) -> str:
-        if self.elements:
-            return f"""{{'page_content': {[e.model_dump() for e in self.elements]}}}"""
+        if self.content:
+            return str([e.model_dump() for e in self.content])
         else:
             return ""
 
     def get_headings(self) -> list[ContentElement]:
-        if self.elements:
-            return [e for e in self.elements if e.is_heading()]
+        if self.content:
+            return [e for e in self.content if e.is_heading()]
         else:
             return []
 

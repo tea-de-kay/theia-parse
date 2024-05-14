@@ -5,7 +5,7 @@ from jinja2 import Environment as JinjaEnvironment
 from pydantic import BaseModel
 
 from theia_parse.__spi__ import BaseEnvSettings
-from theia_parse.model import ContentElement, LLMUsage
+from theia_parse.model import ContentElement, LLMUsage, PromptAdditions
 
 
 class LlmApiSettings(BaseEnvSettings):
@@ -20,7 +20,7 @@ class LLMResponse(BaseModel):
     usage: LLMUsage = LLMUsage()
 
 
-class LLMExtractionResponse(BaseModel):
+class LLMExtractionResult(BaseModel):
     raw: str
     content: list[ContentElement] | None = None
     usage: LLMUsage = LLMUsage()
@@ -41,8 +41,9 @@ class LLM(ABC):
     def extract(
         self,
         image_data: bytes | None,
-        extracted_text: str | None,
-    ) -> LLMResponse:
+        raw_extracted_text: str | None,
+        prompt_additions: PromptAdditions,
+    ) -> LLMExtractionResult:
         pass
 
 
