@@ -25,7 +25,12 @@ class PDFParser(FileParser):
             return
 
         pages: list[DocumentPage] = []
-        for pdf_page in tqdm(pdf.pages) if verbose else pdf.pages:
+        for pdf_page in tqdm(
+            pdf.pages,
+            disable=not verbose,
+            desc="pages of file",
+            leave=False,
+        ):
             img = pdf_page.to_image(resolution=RESOLUTION)
             img_data = BytesIO()
             img.save(img_data)

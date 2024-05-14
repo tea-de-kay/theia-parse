@@ -1,10 +1,14 @@
 import os
 from pathlib import Path
+from typing import Generator
+
+from tqdm import tqdm
 
 from theia_parse.llm.__spi__ import LLM, LlmApiSettings
 from theia_parse.llm.openai.openai_llm import OpenAiLLM
 from theia_parse.model import ParsedDocument
 from theia_parse.parser.file_parser import EXTENSION_TO_PARSER
+from theia_parse.util.files import get_total_number_of_files
 from theia_parse.util.log import LogFactory
 
 
@@ -19,20 +23,24 @@ class DocumentParser:
 
         self._verbose = verbose
 
-    def parse(self, path: str | Path) -> ParsedDocument | list[ParsedDocument] | None:
+    def parse(self, path: str | Path) -> Generator[ParsedDocument | None, None, None]:
         path = Path(path)
 
         if path.is_file():
-            return self._parse_file(path)
+            yield self._parse_file(path)
         else:
-            docs = []
-            for root, _, file_names in os.walk(path):
+            for root, _, file_names in tqdm(
+                os.walk(path),
+                desc="files",
+                disable=not self._verbose,
+                total=get_total_number_of_files(path),
+            ):
                 for file_name in file_names:
-                    parsed = self._parse_file(Path(root) / file_name)
+                    current_path = Path(root) / file_name
+                    self._log.info("Working on file [path='{0}']", current_path)
+                    parsed = self._parse_file(current_path)
                     if parsed is not None:
-                        docs.append(parsed)
-
-        return docs if docs else None
+                        yield parsed
 
     def _parse_file(self, path: Path) -> ParsedDocument | None:
         parser = EXTENSION_TO_PARSER.get(path.suffix.strip(".").lower())

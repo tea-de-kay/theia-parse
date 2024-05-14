@@ -32,9 +32,11 @@ Make sure to:
 * merge appropriate text blocks to yield a coherent reading experience
 * strictly separate languages
 * extract each column of a multilingual column layout separately
+{% if custom_instructions %}
 {% for instruction in custom_instructions %}
 * {{ instruction }}
 {% endfor %}
+{% endif %}
 
 """  # noqa
 

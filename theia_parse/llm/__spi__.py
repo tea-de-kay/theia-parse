@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from typing import Any
 
 from jinja2 import Environment as JinjaEnvironment
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 from theia_parse.__spi__ import BaseEnvSettings
 from theia_parse.model import ContentElement, LLMUsage, PromptAdditions
@@ -56,5 +56,7 @@ class Prompt:
 
 
 class Prompts(BaseModel):
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
     mm_extract_content_system_prompt: Prompt
     mm_extract_content_user_prompt: Prompt

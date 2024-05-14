@@ -1,9 +1,9 @@
-from enum import Enum
+from enum import StrEnum
 
 from pydantic import BaseModel
 
 
-class ContentType(Enum):
+class ContentType(StrEnum):
     HEADING_1 = "heading-level-1"
     HEADING_2 = "heading-level-2"
     HEADING_3 = "heading-level-3"
