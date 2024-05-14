@@ -48,3 +48,5 @@ class ParsedDocument(BaseModel):
 class PromptAdditions(BaseModel):
     system_preamble: str | None = None
     custom_instructions: list[str] | None = None
+    structured_previous_page: str | None = None
+    previous_headings: str | None = None

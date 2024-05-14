@@ -1,11 +1,20 @@
+from base64 import b64encode
+from typing import Any
+
 from openai import AzureOpenAI
 
-from theia_parse.llm.__spi__ import LLM, LlmApiSettings, LLMResponse, Prompts
+from theia_parse.llm.__spi__ import (
+    LLM,
+    LlmApiSettings,
+    LLMExtractionResponse,
+    LLMGenerationConfig,
+    LLMResponse,
+    LLMUsage,
+    Prompts,
+)
 from theia_parse.llm.openai.prompt_templates import DEFAULT_PROMPTS
-from theia_parse.model import PromptAdditions
-
-
-DEFAULT_PROMPT_ADDITIONS = PromptAdditions()
+from theia_parse.model import ContentElement, PromptAdditions
+from theia_parse.parser.json_parser import JsonParser
 
 
 class OpenAiLM(LLM):
@@ -13,11 +22,9 @@ class OpenAiLM(LLM):
         self,
         config: LlmApiSettings,
         prompts: Prompts = DEFAULT_PROMPTS,
-        prompt_additions: PromptAdditions = DEFAULT_PROMPT_ADDITIONS,
     ) -> None:
         self._config = config
         self._prompts = prompts
-        self._prompt_additions = prompt_additions
 
         self._client = AzureOpenAI(
             azure_endpoint=config.AZURE_OPENAI_API_BASE,
@@ -25,9 +32,90 @@ class OpenAiLM(LLM):
             api_key=config.AZURE_OPENAI_API_KEY,
         )
 
+        self._json_parser = JsonParser()
+
+    def generate(
+        self, messages: list[dict], config: LLMGenerationConfig
+    ) -> LLMResponse:
+        response = self._client.chat.completions.create(
+            model=self._config.AZURE_OPENAI_API_DEPLOYMENT,
+            messages=messages,
+            temperature=config.temperature,
+            max_tokens=config.max_tokens,
+        )
+
+        return LLMResponse(
+            raw=response.choices[0].message.content,
+            usage=LLMUsage(
+                request_tokens=response.usage.prompt_tokens,
+                response_tokens=response.usage.completion_tokens,
+            ),
+        )
+
     def extract(
         self,
         image_data: bytes | None,
         extracted_text: str | None,
-    ) -> LLMResponse:
-        pass
+        prompt_additions: PromptAdditions,
+    ) -> LLMExtractionResponse:
+        prompt_data = {
+            **prompt_additions.model_dump(),
+            "extracted_text": extracted_text,
+        }
+
+        messages = self._assemble_messages(prompt_data, image_data)
+
+        response = self.generate(
+            messages,
+            LLMGenerationConfig(temperature=0, max_tokens=4096),
+        )
+
+        page_data = self._json_parser.parse(response.raw)
+
+        return LLMExtractionResponse(
+            raw=response.raw,
+            content=[ContentElement(**e) for e in page_data["page_content"]],
+            usage=response.usage,
+        )
+
+    def _bytes_image_to_data_url(
+        self,
+        image_data: bytes,
+        mime_type: str = "image/png",
+    ):
+        base64_encoded_data = b64encode(image_data).decode("utf-8")
+
+        return f"data:{mime_type};base64,{base64_encoded_data}"
+
+    def _assemble_messages(
+        self,
+        prompt_data: dict[str, Any],
+        image_data: bytes | None,
+    ) -> list[dict]:
+        system_message = {
+            "role": "system",
+            "content": self._prompts.mm_extract_content_system_prompt.render(
+                prompt_data
+            ),
+        }
+
+        user_message_content: list[dict] = [
+            {
+                "type": "text",
+                "text": self._prompts.mm_extract_content_user_prompt.render(
+                    prompt_data
+                ),
+            }
+        ]
+
+        if image_data is not None:
+            user_message_content.append(
+                {
+                    "type": "image_url",
+                    "image_url": {"url": self._bytes_image_to_data_url(image_data)},
+                }
+            )
+
+        user_message = {"role": "user", "content": user_message_content}
+
+        return [system_message, user_message]
