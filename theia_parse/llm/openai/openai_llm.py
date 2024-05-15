@@ -39,12 +39,14 @@ class OpenAiLLM(LLM):
     def generate(
         self, messages: list[dict], config: LLMGenerationConfig
     ) -> LLMResponse:
+        self._log.trace("Calling LLM [messages='{0}']", messages)
         response = self._client.chat.completions.create(
             model=self._config.AZURE_OPENAI_API_DEPLOYMENT,
             messages=messages,
             temperature=config.temperature,
             max_tokens=config.max_tokens,
         )
+        self._log.trace("Raw LLM response [response='{0}']", response)
 
         return LLMResponse(
             raw=response.choices[0].message.content,
