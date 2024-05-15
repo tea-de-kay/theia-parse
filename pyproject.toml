@@ -6,6 +6,7 @@ build-backend = "poetry.core.masonry.api"
 name = "theia-parse"
 version = "0.1.0"
 description = "Document Parser via Multimodal LLMs"
+license = "Apache-2.0"
 authors = [ ]
 
 [tool.ruff]

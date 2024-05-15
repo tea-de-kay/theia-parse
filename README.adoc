@@ -1,0 +1,15 @@
+= Theia (Θεία) Parse
+
+*A generic document parsing library using multimodal LLMs.*
+
+
+== Development
+
+----
+git clone git@github.com:tea-de-kay/theia-parse.git
+cd theia-parse
+pip install poetry
+poetry install
+----
+
+
