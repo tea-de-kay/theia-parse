@@ -62,6 +62,7 @@ class DocumentPage(BaseModel):
 
 class ParsedDocument(BaseModel):
     path: str
+    md5_sum: str | None = None
     pages: list[DocumentPage]
     metadata: dict[str, Any] = Field(default_factory=dict)
 
@@ -75,4 +76,5 @@ class PromptAdditions(BaseModel):
 class DocumentParserConfig(BaseModel):
     verbose: bool = True
     save_files: bool = True
+    deduplicate_docs: bool = True
     prompt_additions: PromptAdditions = PromptAdditions()
