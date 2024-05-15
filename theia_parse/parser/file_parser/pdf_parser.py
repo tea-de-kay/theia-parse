@@ -46,7 +46,8 @@ class PDFParser(FileParser):
             img.save(img_data)
             img_data.seek(0)
 
-            raw_extracted_text = pdf_page.extract_text()  # TODO: use better parser
+            # TODO: use better parser and include extracted images
+            raw_extracted_text = pdf_page.extract_text()
             previous_headings = [
                 h.model_dump()
                 for headings in [p.get_headings() for p in pages]

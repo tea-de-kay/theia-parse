@@ -29,7 +29,9 @@ def main():
         prompt_additions=PromptAdditions(
             custom_instructions=[
                 "Most pages will have a multilingual 2 column layout. Make sure to correctly separate the columns as separate content blocks.",  # noqa
-                "Do not convert columns to tables.",
+                "Merge content blocks of the same type within a section for each column separately.",  # noqa
+                "Do not convert layout columns to tables.",
+                "Keep mixed language headings as a single block including their numbering.",  # noqa
             ]
         ),
     )
