@@ -9,7 +9,7 @@ from theia_parse.llm.__spi__ import LLM, LlmApiSettings
 from theia_parse.llm.openai.openai_llm import OpenAiLLM
 from theia_parse.model import DocumentParserConfig, ParsedDocument
 from theia_parse.parser.file_parser import EXTENSION_TO_PARSER
-from theia_parse.util.files import get_md5_sum, get_total_number_of_files
+from theia_parse.util.files import get_md5_sum
 from theia_parse.util.log import LogFactory
 
 
@@ -44,13 +44,14 @@ class DocumentParser:
                 yield parsed
         else:
             hash_to_path: dict[str, Path] = {}
-            for root, _, file_names in tqdm(
-                os.walk(path),
-                desc="files",
-                disable=not self._config.verbose,
-                total=get_total_number_of_files(path, list(EXTENSION_TO_PARSER.keys())),
-            ):
-                for file_name in sorted(file_names):
+            for root, _, file_names in os.walk(path):
+                self._log.info("Working on directory [dir_name='{0}']", root)
+                file_names = sorted(self._get_supported_file_names(file_names))
+                for file_name in tqdm(
+                    file_names,
+                    desc="files in dir",
+                    disable=not self._config.verbose,
+                ):
                     current_path = Path(root) / file_name
                     self._log.info("Working on file [path='{0}']", current_path)
                     md5_sum = get_md5_sum(current_path)
@@ -90,3 +91,11 @@ class DocumentParser:
     def _save_duplicate_info(self, path: Path, existing_path: Path) -> None:
         save_path = path.with_suffix(DUPLICATE_SUFFIX)
         save_path.write_text(str(existing_path))
+
+    def _get_supported_file_names(self, file_names: list[str]) -> list[str]:
+        file_names = [
+            f
+            for f in file_names
+            if any(f.lower().endswith(suffix) for suffix in EXTENSION_TO_PARSER)
+        ]
+        return file_names
