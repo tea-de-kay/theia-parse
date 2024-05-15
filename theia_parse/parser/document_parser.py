@@ -5,6 +5,7 @@ from typing import Generator
 
 from tqdm import tqdm
 
+from theia_parse.const import DUPLICATE_SUFFIX, PARSED_JSON_SUFFIX
 from theia_parse.llm.__spi__ import LLM, LlmApiSettings
 from theia_parse.llm.openai.openai_llm import OpenAiLLM
 from theia_parse.model import DocumentParserConfig, ParsedDocument
@@ -14,8 +15,6 @@ from theia_parse.util.log import LogFactory
 
 
 DEFAULT_DOCUMENT_PARSER_CONFIG = DocumentParserConfig()
-PARSED_JSON_SUFFIX = ".parsed.json"
-DUPLICATE_SUFFIX = ".duplicate"
 
 
 class DocumentParser:

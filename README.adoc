@@ -3,6 +3,11 @@
 *A generic document parsing library using multimodal LLMs.*
 
 
+== Sample Usage
+
+see `scripts/01_parse_dir.py`.
+
+
 == Development
 
 ----

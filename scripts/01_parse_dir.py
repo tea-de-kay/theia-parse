@@ -26,11 +26,11 @@ def main():
     config = DocumentParserConfig(
         verbose=True,
         save_files=True,
-        # prompt_additions=PromptAdditions(
-        #     custom_instructions=[
-        #         "If the multi column layout contains different langauges, cleanly separate the individual columns as separate content blocks."  # noqa
-        #     ]
-        # ),
+        prompt_additions=PromptAdditions(
+            custom_instructions=[
+                "Most pages will have a multilingual 2 column layout. Make sure to correctly separate the columns as separate content blocks."  # noqa
+            ]
+        ),
     )
     parser = DocumentParser(config=config)
 
