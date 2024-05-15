@@ -1,4 +1,4 @@
-from theia_parse.parser.document_parser import DocumentParser
+from theia_parse.parser.document_parser import DocumentParser, DocumentParserConfig
 
 
-__all__ = ["DocumentParser"]
+__all__ = ["DocumentParser", "DocumentParserConfig"]

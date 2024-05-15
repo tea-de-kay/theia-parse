@@ -3,8 +3,7 @@ from pathlib import Path
 from dotenv import load_dotenv
 from tqdm import tqdm
 
-from theia_parse import DocumentParser
-from theia_parse.model import DocumentParserConfig
+from theia_parse import DocumentParser, DocumentParserConfig
 
 
 PATH = (Path(__file__).parent.parent / "data/sample").resolve()
