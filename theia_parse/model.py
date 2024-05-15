@@ -1,6 +1,7 @@
 from enum import StrEnum
+from typing import Any
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class ContentType(StrEnum):
@@ -61,6 +62,7 @@ class DocumentPage(BaseModel):
 class ParsedDocument(BaseModel):
     path: str
     pages: list[DocumentPage]
+    metadata: dict[str, Any] = Field(default_factory=dict)
 
 
 class PromptAdditions(BaseModel):
@@ -68,3 +70,8 @@ class PromptAdditions(BaseModel):
     custom_instructions: list[str] | None = None
     structured_previous_page: str | None = None
     previous_headings: str | None = None
+
+
+class DocumentParserConfig(BaseModel):
+    verbose: bool = True
+    save_files: bool = True

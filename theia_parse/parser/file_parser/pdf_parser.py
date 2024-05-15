@@ -5,7 +5,12 @@ import pdfplumber
 from tqdm import tqdm
 
 from theia_parse.llm.__spi__ import LLM
-from theia_parse.model import DocumentPage, ParsedDocument, PromptAdditions
+from theia_parse.model import (
+    DocumentPage,
+    DocumentParserConfig,
+    ParsedDocument,
+    PromptAdditions,
+)
 from theia_parse.parser.file_parser.__spi__ import FileParser
 from theia_parse.util.log import LogFactory
 
@@ -17,7 +22,12 @@ LAST_HEADINGS_N = 10
 class PDFParser(FileParser):
     _log = LogFactory.get_logger()
 
-    def parse(self, path: Path, llm: LLM, verbose: bool) -> ParsedDocument | None:
+    def parse(
+        self,
+        path: Path,
+        llm: LLM,
+        config: DocumentParserConfig,
+    ) -> ParsedDocument | None:
         try:
             pdf = pdfplumber.open(path)
         except Exception:
@@ -27,7 +37,7 @@ class PDFParser(FileParser):
         pages: list[DocumentPage] = []
         for pdf_page in tqdm(
             pdf.pages,
-            disable=not verbose,
+            disable=not config.verbose,
             desc="pages of file",
             leave=False,
         ):

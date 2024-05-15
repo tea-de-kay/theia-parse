@@ -9,10 +9,10 @@ from theia_parse.model import ContentElement, LLMUsage, PromptAdditions
 
 
 class LlmApiSettings(BaseEnvSettings):
-    AZURE_OPENAI_API_VERSION: str
-    AZURE_OPENAI_API_BASE: str
-    AZURE_OPENAI_API_DEPLOYMENT: str
-    AZURE_OPENAI_API_KEY: str
+    AZURE_OPENAI_API_VERSION: str = ""
+    AZURE_OPENAI_API_BASE: str = ""
+    AZURE_OPENAI_API_DEPLOYMENT: str = ""
+    AZURE_OPENAI_API_KEY: str = ""
 
 
 class LLMResponse(BaseModel):
