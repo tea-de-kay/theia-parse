@@ -1,15 +1,15 @@
-import json
 from pathlib import Path
 
 from dotenv import load_dotenv
 from tqdm import tqdm
 
 from theia_parse import DocumentParser
-from theia_parse.model import ParsedDocument
+from theia_parse.model import DocumentParserConfig
 
 
 PATH = (Path(__file__).parent.parent / "data/sample").resolve()
 
+# GPT-4 Turbo prices
 PRICE_PER_REQUEST_TOKEN = 0.01 / 1_000
 PRICE_PER_RESPONSE_TOKEN = 0.029 / 1_000
 
@@ -23,24 +23,21 @@ def main():
 
     load_dotenv()
 
-    parser = DocumentParser()
-
-    docs: list[ParsedDocument] = []
-    for res in parser.parse(PATH):
-        if res is not None:
-            docs.append(res)
-
-    print(PATH / "parsed.json")
-
-    with open(PATH / "parsed.json", "wt") as outfile:
-        json.dump([doc.model_dump() for doc in docs], outfile)
+    config = DocumentParserConfig(
+        verbose=True,
+        save_files=True,
+    )
+    parser = DocumentParser(config=config)
 
     request_tokens = 0
     response_tokens = 0
-    for doc in docs:
-        for page in doc.pages:
-            request_tokens += page.token_usage.request_tokens
-            response_tokens += page.token_usage.response_tokens
+    for doc in parser.parse(PATH):
+        if doc is not None:
+            for page in doc.pages:
+                if page.token_usage.request_tokens is not None:
+                    request_tokens += page.token_usage.request_tokens
+                if page.token_usage.response_tokens is not None:
+                    response_tokens += page.token_usage.response_tokens
 
     total_price = round(
         request_tokens * PRICE_PER_REQUEST_TOKEN
