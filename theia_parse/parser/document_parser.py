@@ -46,7 +46,7 @@ class DocumentParser:
                 os.walk(path),
                 desc="files",
                 disable=not self._config.verbose,
-                total=get_total_number_of_files(path),
+                total=get_total_number_of_files(path, list(EXTENSION_TO_PARSER.keys())),
             ):
                 for file_name in file_names:
                     current_path = Path(root) / file_name

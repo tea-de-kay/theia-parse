@@ -4,6 +4,7 @@ from dotenv import load_dotenv
 from tqdm import tqdm
 
 from theia_parse import DocumentParser, DocumentParserConfig
+from theia_parse.model import PromptAdditions
 
 
 PATH = (Path(__file__).parent.parent / "data/sample").resolve()
@@ -25,6 +26,11 @@ def main():
     config = DocumentParserConfig(
         verbose=True,
         save_files=True,
+        # prompt_additions=PromptAdditions(
+        #     custom_instructions=[
+        #         "If the multi column layout contains different langauges, cleanly separate the individual columns as separate content blocks."  # noqa
+        #     ]
+        # ),
     )
     parser = DocumentParser(config=config)
 

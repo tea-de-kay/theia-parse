@@ -9,7 +9,6 @@ from theia_parse.model import (
     DocumentPage,
     DocumentParserConfig,
     ParsedDocument,
-    PromptAdditions,
 )
 from theia_parse.parser.file_parser.__spi__ import FileParser
 from theia_parse.util.log import LogFactory
@@ -34,6 +33,7 @@ class PDFParser(FileParser):
             self._log.error("Could not open pdf [path='{0}']", path)
             return
 
+        prompt_additions = config.prompt_additions.model_copy(deep=True)
         pages: list[DocumentPage] = []
         for pdf_page in tqdm(
             pdf.pages,
@@ -53,9 +53,7 @@ class PDFParser(FileParser):
                 for h in headings
             ][-LAST_HEADINGS_N:]
 
-            prompt_additions = PromptAdditions(
-                previous_headings=str(previous_headings),
-            )
+            prompt_additions.previous_headings = str(previous_headings)
 
             result = llm.extract(
                 image_data=img_data.read(),

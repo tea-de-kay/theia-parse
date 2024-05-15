@@ -20,7 +20,7 @@ Your task is to use the raw extracted text and image, to extract the individual 
 ```
 {
     "page_content": [
-        {"type": "one of: heading-level-i, text, table, footer", "content": "the text content", "language": "the language code"}
+        {"type": "one of: heading-level-i, text, table, table-of-contents, footer", "content": "the text content", "language": "the language code"}
     ]
 }
 ```
@@ -28,9 +28,9 @@ Make sure to:
 * include all text
 * identify headings and their level (1, 2, 3, ...) consistently
 * use markdown formatting for tables and bullet points
+* use the image to identify column layouts and extract each column of a column layout separately in reading order
+* merge as much content blocks as possible within a column and do not mix columns
 * merge appropriate text blocks to yield a coherent reading experience
-* strictly separate languages
-* extract each column of a multilingual column layout separately
 {% if custom_instructions %}
 {% for instruction in custom_instructions %}
 * {{ instruction }}

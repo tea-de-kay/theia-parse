@@ -14,6 +14,7 @@ class ContentType(StrEnum):
     TEXT = "text"
     FOOTER = "footer"
     TABLE = "table"
+    TABLE_OF_CONTENTS = "table-of-contents"
 
 
 class ContentElement(BaseModel):
@@ -74,3 +75,4 @@ class PromptAdditions(BaseModel):
 class DocumentParserConfig(BaseModel):
     verbose: bool = True
     save_files: bool = True
+    prompt_additions: PromptAdditions = PromptAdditions()
