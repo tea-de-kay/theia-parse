@@ -5,7 +5,7 @@ MM_EXTRACT_CONTENT_SYSTEM_PROMPT = """
 {% if system_preamble %}
 {{ system_preamble }}
 {% else %}
-You are an expert for document parsing for technical company documents.
+You are an expert for document parsing for technical company documents. You are precise, structured and always follow the given instructions.
 {% endif %}
 
 You are provided with:
@@ -28,8 +28,8 @@ Make sure to:
 * include all text
 * identify headings and their level (1, 2, 3, ...) consistently
 * use markdown formatting for tables and bullet points
-* use the image to identify column layouts and extract each column of a column layout separately in reading order
-* merge as much content blocks as possible within a column and do not mix columns
+* use the image to identify column layouts and extract each column of a column layout separately
+* merge as much content blocks as possible within a column but do not mix different columns
 * merge appropriate text blocks to yield a coherent reading experience
 {% if custom_instructions %}
 {% for instruction in custom_instructions %}
