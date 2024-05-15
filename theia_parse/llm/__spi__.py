@@ -52,7 +52,7 @@ class Prompt:
         self._template = JinjaEnvironment(trim_blocks=True).from_string(template)
 
     def render(self, data: dict[str, Any]) -> str:
-        return self._template.render(**data)
+        return self._template.render(**data).strip()
 
 
 class Prompts(BaseModel):

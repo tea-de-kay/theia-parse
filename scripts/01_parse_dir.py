@@ -28,7 +28,8 @@ def main():
         save_files=True,
         prompt_additions=PromptAdditions(
             custom_instructions=[
-                "Most pages will have a multilingual 2 column layout. Make sure to correctly separate the columns as separate content blocks."  # noqa
+                "Most pages will have a multilingual 2 column layout. Make sure to correctly separate the columns as separate content blocks.",  # noqa
+                "Do not convert columns to tables.",
             ]
         ),
     )

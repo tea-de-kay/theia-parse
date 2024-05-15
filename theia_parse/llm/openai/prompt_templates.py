@@ -24,13 +24,13 @@ Your task is to use the raw extracted text and image, to extract the individual 
     ]
 }
 ```
-Make sure to:
-* include all text
-* identify headings and their level (1, 2, 3, ...) consistently
-* use markdown formatting for tables and bullet points
-* use the image to identify column layouts and extract each column of a column layout separately
-* merge as much content blocks as possible within a column but do not mix different columns
-* merge appropriate text blocks to yield a coherent reading experience
+
+# Instructions:
+
+* Include all text
+* Identify headings and their level (1, 2, 3, ...) consistently
+* Use markdown formatting for tables and bullet points
+* Use the image to identify column layouts and extract each column of a column layout separately
 {% if custom_instructions %}
 {% for instruction in custom_instructions %}
 * {{ instruction }}
