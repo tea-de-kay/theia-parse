@@ -47,7 +47,6 @@ class PDFParser(FileParser):
             img_data.seek(0)
 
             raw_extracted_text = pdf_page.extract_text()  # TODO: use better parser
-            structured_previous_page = pages[-1].to_string() if pages else None
             previous_headings = [
                 h.model_dump()
                 for headings in [p.get_headings() for p in pages]
@@ -55,7 +54,6 @@ class PDFParser(FileParser):
             ][-LAST_HEADINGS_N:]
 
             prompt_additions = PromptAdditions(
-                structured_previous_page=structured_previous_page,
                 previous_headings=str(previous_headings),
             )
 

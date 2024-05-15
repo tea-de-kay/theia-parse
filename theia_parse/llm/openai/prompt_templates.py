@@ -11,7 +11,6 @@ You are an expert for document parsing for technical company documents.
 You are provided with:
 * a raw extracted text from a pdf page, which may be messy due to a complicated layout and may be multilingual with a mix of languages
 * an image of the pdf page
-* the structured output of the previous page
 * an optional list of previous headings in the document
 
 Your overall goal is to get structured text from the pdf page, indicating headings, normal text, tables, ...
@@ -44,11 +43,6 @@ Make sure to:
 MM_EXTRACT_CONTENT_USER_PROMPT = """
 # Raw extracted pdf page text:
 {{ raw_extracted_text }}
-
-{% if previous_page %}
-# Structured previous page:
-{'page_content': {{ previous_page }} }
-{% endif %}
 
 {% if previous_headings %}
 # Previous headings:
