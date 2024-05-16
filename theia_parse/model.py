@@ -15,6 +15,7 @@ class ContentType(StrEnum):
     FOOTER = "footer"
     TABLE = "table"
     TABLE_OF_CONTENTS = "table-of-contents"
+    IMAGE = "image"
 
 
 class ContentElement(BaseModel):

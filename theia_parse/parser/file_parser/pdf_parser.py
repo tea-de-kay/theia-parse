@@ -14,7 +14,7 @@ from theia_parse.parser.file_parser.__spi__ import FileParser
 from theia_parse.util.log import LogFactory
 
 
-RESOLUTION = 300
+RESOLUTION = 150
 LAST_HEADINGS_N = 10
 
 
@@ -38,9 +38,11 @@ class PDFParser(FileParser):
         for pdf_page in tqdm(
             pdf.pages,
             disable=not config.verbose,
-            desc="pages of file",
+            desc="pages in file",
             leave=False,
         ):
+            # TODO: Every image is resized to 1024x1024
+            # Allow for multiple images per page to provide high resolution
             img = pdf_page.to_image(resolution=RESOLUTION)
             img_data = BytesIO()
             img.save(img_data)

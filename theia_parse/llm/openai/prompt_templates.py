@@ -25,7 +25,7 @@ Your task is to use the raw extracted text and image, to extract the individual 
 
 * Include all text from the raw extracted text and the image.
 * Identify headings and their level (1, 2, 3, ...) consistently.
-* For content blocks of type: "image", the content should be a short description of the image
+* For content blocks of type: "image", the content should be a short description of the image. Only include images which are relevant for the document content.
 * Replace special Unicode characters when possible by standard characters.
 * Use standard markdown formatting for tables and bullet points.
 * Use the image to identify column layouts and extract each column of a column layout separately.

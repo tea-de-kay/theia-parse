@@ -25,6 +25,8 @@ def main():
 def content_to_markdown(content: ContentElement) -> str:
     if content.is_heading():
         return f"{'#'*content.heading_level} {content.content}"
+    elif content.type == "image":
+        return f"![{content.content}](...)"
     else:
         return content.content
 
