@@ -4,6 +4,12 @@ from typing import Any
 from pydantic import BaseModel, Field
 
 
+class LLMUsage(BaseModel):
+    request_tokens: int | None = None
+    response_tokens: int | None = None
+    total_tokens: int | None = None
+
+
 class ContentType(StrEnum):
     HEADING_1 = "heading-level-1"
     HEADING_2 = "heading-level-2"
@@ -34,12 +40,6 @@ class ContentElement(BaseModel):
             return int(self.type.value.split("-")[-1])
 
 
-class LLMUsage(BaseModel):
-    request_tokens: int | None = None
-    response_tokens: int | None = None
-    total_tokens: int | None = None
-
-
 class DocumentPage(BaseModel):
     page_nr: int
     content: list[ContentElement] | None
@@ -50,7 +50,7 @@ class DocumentPage(BaseModel):
 
     def to_string(self) -> str:
         if self.content:
-            return str([e.model_dump() for e in self.content])
+            return str([e.model_dump(mode="json") for e in self.content])
         else:
             return ""
 
@@ -72,6 +72,7 @@ class PromptAdditions(BaseModel):
     system_preamble: str | None = None
     custom_instructions: list[str] | None = None
     previous_headings: str | None = None
+    previous_structured_page_content: str | None = None
 
 
 class DocumentParserConfig(BaseModel):

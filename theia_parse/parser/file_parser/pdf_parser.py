@@ -14,7 +14,7 @@ from theia_parse.parser.file_parser.__spi__ import FileParser
 from theia_parse.util.log import LogFactory
 
 
-RESOLUTION = 150
+RESOLUTION = 200
 LAST_HEADINGS_N = 10
 
 
@@ -41,7 +41,7 @@ class PDFParser(FileParser):
             desc="pages in file",
             leave=False,
         ):
-            # TODO: Every image is resized to 1024x1024
+            # TODO: Every image is resized to 1024x1024 (?)
             # Allow for multiple images per page to provide high resolution
             img = pdf_page.to_image(resolution=RESOLUTION)
             img_data = BytesIO()
@@ -51,12 +51,15 @@ class PDFParser(FileParser):
             # TODO: use better parser and include extracted images
             raw_extracted_text = pdf_page.extract_text()
             previous_headings = [
-                h.model_dump()
+                h.model_dump(mode="json")
                 for headings in [p.get_headings() for p in pages]
                 for h in headings
             ][-LAST_HEADINGS_N:]
 
             prompt_additions.previous_headings = str(previous_headings)
+            prompt_additions.previous_structured_page_content = (
+                pages[-1].to_string() if pages else None
+            )
 
             result = llm.extract(
                 image_data=img_data.read(),
