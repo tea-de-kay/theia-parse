@@ -41,21 +41,17 @@ def main():
     response_tokens = 0
     for doc in parser.parse(PATH):
         if doc is not None:
-            for page in doc.pages:
-                if page.token_usage.request_tokens is not None:
-                    request_tokens += page.token_usage.request_tokens
-                if page.token_usage.response_tokens is not None:
-                    response_tokens += page.token_usage.response_tokens
+            request_tokens += doc.token_usage.request_tokens or 0
+            response_tokens += doc.token_usage.response_tokens or 0
 
-    total_price = round(
+    total_price = (
         request_tokens * PRICE_PER_REQUEST_TOKEN
-        + response_tokens * PRICE_PER_RESPONSE_TOKEN,
-        2,
+        + response_tokens * PRICE_PER_RESPONSE_TOKEN
     )
     total_tokens = request_tokens + response_tokens
 
     tqdm.write(f"Total tokens used: {total_tokens}.")
-    tqdm.write(f"Total price: {total_price}.")
+    tqdm.write(f"Total price: {total_price:.2f}.")
 
 
 if __name__ == "__main__":
