@@ -33,7 +33,11 @@ class DirectoryParser:
         self._config = config
         self._document_parser = DocumentParser(self._llm, config)
 
-    def parse(self, directory: str | Path) -> Generator[ParsedDocument, None, None]:
+    def parse(
+        self,
+        directory: str | Path,
+        existing_hash_to_path: dict[str, str | Path] | None = None,
+    ) -> Generator[ParsedDocument, None, None]:
         directory = Path(directory)
 
         if not directory.is_dir():
@@ -41,6 +45,9 @@ class DirectoryParser:
             return
 
         hash_to_path: dict[str, Path] = {}
+        if existing_hash_to_path is not None:
+            hash_to_path = {k: Path(v) for k, v in existing_hash_to_path.items()}
+
         for root, _, file_names in os.walk(directory):
             self._log.info("Working on directory [dir_name='{0}']", root)
             file_names = sorted(self._get_supported_file_names(file_names))
