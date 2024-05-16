@@ -67,6 +67,16 @@ class ParsedDocument(BaseModel):
     pages: list[DocumentPage]
     metadata: dict[str, Any] = Field(default_factory=dict)
 
+    @property
+    def token_usage(self) -> LLMUsage:
+        request_tokens = 0
+        response_tokens = 0
+        for page in self.pages:
+            request_tokens += page.token_usage.request_tokens or 0
+            response_tokens += page.token_usage.response_tokens or 0
+
+        return LLMUsage(request_tokens=request_tokens, response_tokens=response_tokens)
+
 
 class PromptAdditions(BaseModel):
     system_preamble: str | None = None
