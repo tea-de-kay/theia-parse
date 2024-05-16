@@ -7,10 +7,11 @@ from tqdm import tqdm
 from theia_parse.llm.__spi__ import LLM
 from theia_parse.model import (
     DocumentPage,
-    DocumentParserConfig,
     ParsedDocument,
+    ParserConfig,
 )
 from theia_parse.parser.file_parser.__spi__ import FileParser
+from theia_parse.util.files import get_md5_sum
 from theia_parse.util.log import LogFactory
 
 
@@ -25,13 +26,16 @@ class PDFParser(FileParser):
         self,
         path: Path,
         llm: LLM,
-        config: DocumentParserConfig,
+        config: ParserConfig,
     ) -> ParsedDocument | None:
         try:
             pdf = pdfplumber.open(path)
         except Exception:
             self._log.error("Could not open pdf [path='{0}']", path)
             return
+
+        metadata = pdf.metadata
+        md5_sum = get_md5_sum(path)
 
         prompt_additions = config.prompt_additions.model_copy(deep=True)
         pages: list[DocumentPage] = []
@@ -76,5 +80,13 @@ class PDFParser(FileParser):
                 error=result.error,
             )
             pages.append(page)
+            pdf_page.close()
 
-        return ParsedDocument(path=str(path), pages=pages)
+        pdf.close()
+
+        return ParsedDocument(
+            path=str(path),
+            md5_sum=md5_sum,
+            pages=pages,
+            metadata=metadata,
+        )

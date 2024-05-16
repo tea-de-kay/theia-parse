@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from pathlib import Path
 
 from theia_parse.llm.__spi__ import LLM
-from theia_parse.model import DocumentParserConfig, ParsedDocument
+from theia_parse.model import ParsedDocument, ParserConfig
 
 
 class FileParser(ABC):
@@ -11,6 +11,6 @@ class FileParser(ABC):
         self,
         path: Path,
         llm: LLM,
-        config: DocumentParserConfig,
+        config: ParserConfig,
     ) -> ParsedDocument | None:
         pass

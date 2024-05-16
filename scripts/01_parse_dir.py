@@ -3,7 +3,7 @@ from pathlib import Path
 from dotenv import load_dotenv
 from tqdm import tqdm
 
-from theia_parse import DocumentParser, DocumentParserConfig
+from theia_parse import DirectoryParser, ParserConfig
 from theia_parse.model import PromptAdditions
 
 
@@ -23,7 +23,7 @@ def main():
 
     load_dotenv()
 
-    config = DocumentParserConfig(
+    config = ParserConfig(
         verbose=True,
         save_files=True,
         prompt_additions=PromptAdditions(
@@ -35,7 +35,7 @@ def main():
             ]
         ),
     )
-    parser = DocumentParser(config=config)
+    parser = DirectoryParser(config=config)
 
     request_tokens = 0
     response_tokens = 0

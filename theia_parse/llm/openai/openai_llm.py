@@ -96,7 +96,7 @@ class OpenAiLLM(LLM):
             error=error,
         )
 
-    def _bytes_image_to_data_url(
+    def _image_bytes_to_data_url(
         self,
         image_data: bytes,
         mime_type: str = "image/png",
@@ -130,7 +130,7 @@ class OpenAiLLM(LLM):
             user_message_content.append(
                 {
                     "type": "image_url",
-                    "image_url": {"url": self._bytes_image_to_data_url(image_data)},
+                    "image_url": {"url": self._image_bytes_to_data_url(image_data)},
                 }
             )
 

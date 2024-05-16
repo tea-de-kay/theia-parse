@@ -75,7 +75,7 @@ class PromptAdditions(BaseModel):
     previous_structured_page_content: str | None = None
 
 
-class DocumentParserConfig(BaseModel):
+class ParserConfig(BaseModel):
     verbose: bool = True
     save_files: bool = True
     deduplicate_docs: bool = True
