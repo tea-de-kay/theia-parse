@@ -1,6 +1,8 @@
 from hashlib import md5
 from pathlib import Path
 
+from theia_parse import SUPPORTED_EXTENSIONS
+
 
 def get_md5_sum(path: Path):
     with open(path, "rb") as f:
@@ -10,3 +12,7 @@ def get_md5_sum(path: Path):
             md5_hash.update(chunk)
 
     return md5_hash.hexdigest()
+
+
+def is_file_supported(path: Path, extensions: list[str] = SUPPORTED_EXTENSIONS) -> bool:
+    return path.suffix.lower() in extensions
