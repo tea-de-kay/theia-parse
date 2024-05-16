@@ -46,12 +46,12 @@ class DocumentParser:
             for root, _, file_names in os.walk(path):
                 self._log.info("Working on directory [dir_name='{0}']", root)
                 file_names = sorted(self._get_supported_file_names(file_names))
-                iterator = tqdm(
+                file_name_iterator = tqdm(
                     file_names,
                     desc="files in dir",
                     disable=not self._config.verbose,
                 )
-                for file_name in iterator:
+                for file_name in file_name_iterator:
                     current_path = Path(root) / file_name
                     self._log.info("Working on file [path='{0}']", current_path)
                     md5_sum = get_md5_sum(current_path)
@@ -65,7 +65,7 @@ class DocumentParser:
                             existing_path,
                         )
                         self._save_duplicate_info(current_path, existing_path)
-                        iterator.update()
+                        file_name_iterator.update()
                         continue
                     hash_to_path[md5_sum] = current_path
 
