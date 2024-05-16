@@ -14,5 +14,11 @@ def get_md5_sum(path: Path):
     return md5_hash.hexdigest()
 
 
-def is_file_supported(path: Path, extensions: list[str] = SUPPORTED_EXTENSIONS) -> bool:
-    return path.suffix.lower() in extensions
+def is_file_supported(
+    path: Path | str,
+    extensions: list[str] = SUPPORTED_EXTENSIONS,
+) -> bool:
+    if isinstance(path, Path):
+        return path.suffix.strip(".").lower() in extensions
+    else:
+        return any(path.lower().endswith(ext) for ext in extensions)
