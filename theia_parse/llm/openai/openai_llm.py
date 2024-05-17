@@ -38,15 +38,19 @@ class OpenAiLLM(LLM):
 
     def generate(
         self, messages: list[dict], config: LLMGenerationConfig
-    ) -> LLMResponse:
-        self._log.trace("Calling LLM [messages='{0}']", messages)
-        response = self._client.chat.completions.create(
-            model=self._config.AZURE_OPENAI_API_DEPLOYMENT,
-            messages=messages,
-            temperature=config.temperature,
-            max_tokens=config.max_tokens,
-        )
-        self._log.trace("Raw LLM response [response='{0}']", response)
+    ) -> LLMResponse | None:
+        try:
+            self._log.trace("Calling LLM [messages='{0}']", messages)
+            response = self._client.chat.completions.create(
+                model=self._config.AZURE_OPENAI_API_DEPLOYMENT,
+                messages=messages,
+                temperature=config.temperature,
+                max_tokens=config.max_tokens,
+            )
+            self._log.trace("Raw LLM response [response='{0}']", response)
+        except Exception as e:
+            self._log.error("Exception calling LLM [msg='{0}']", e)
+            return
 
         return LLMResponse(
             raw=response.choices[0].message.content,
@@ -73,6 +77,9 @@ class OpenAiLLM(LLM):
             messages,
             LLMGenerationConfig(temperature=0, max_tokens=4096),
         )
+
+        if response is None:
+            return LLMExtractionResult(raw="", error=True)
 
         page_data = self._json_parser.parse(response.raw)
         error = False
