@@ -22,3 +22,14 @@ def is_file_supported(
         return path.suffix.strip(".").lower() in extensions
     else:
         return any(path.lower().endswith(ext) for ext in extensions)
+
+
+def has_suffixes(path: Path, suffixes: list[str] | str) -> bool:
+    suffixes = [suffixes] if isinstance(suffixes, str) else suffixes
+    n_suffixes = len(suffixes)
+    return path.suffixes[-n_suffixes:] == suffixes
+
+
+def with_suffix(path: Path, suffixes: list[str] | str) -> Path:
+    suffix = suffixes if isinstance(suffixes, str) else "".join(suffixes)
+    return path.with_suffix(suffix)

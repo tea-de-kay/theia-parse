@@ -2,7 +2,8 @@ import os
 import shutil
 from pathlib import Path
 
-from theia_parse.const import DUPLICATE_SUFFIX, PARSED_JSON_SUFFIX
+from theia_parse.const import DUPLICATE_SUFFIXES, PARSED_JSON_SUFFIXES
+from theia_parse.util.files import has_suffixes, with_suffix
 from theia_parse.util.log import LogFactory
 
 
@@ -14,12 +15,12 @@ def restore_duplicates(dir: Path) -> int:
     for root, _, file_names in os.walk(dir):
         for file_name in file_names:
             curr_path = Path(root) / file_name
-            if "".join(curr_path.suffix) == DUPLICATE_SUFFIX:
+            if has_suffixes(curr_path, DUPLICATE_SUFFIXES):
                 source_path = Path(curr_path.read_text())
                 try:
                     shutil.copy(
-                        source_path.with_suffix(PARSED_JSON_SUFFIX),
-                        curr_path.with_suffix(PARSED_JSON_SUFFIX),
+                        with_suffix(source_path, PARSED_JSON_SUFFIXES),
+                        with_suffix(curr_path, PARSED_JSON_SUFFIXES),
                     )
                 except Exception:
                     _log.warning(

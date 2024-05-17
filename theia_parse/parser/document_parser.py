@@ -1,12 +1,12 @@
 import json
 from pathlib import Path
 
-from theia_parse.const import PARSED_JSON_SUFFIX
+from theia_parse.const import PARSED_JSON_SUFFIXES
 from theia_parse.llm.__spi__ import LLM, LlmApiSettings
 from theia_parse.llm.openai.openai_llm import OpenAiLLM
 from theia_parse.model import ParsedDocument, ParserConfig
 from theia_parse.parser.file_parser import EXTENSION_TO_PARSER
-from theia_parse.util.files import get_md5_sum
+from theia_parse.util.files import with_suffix
 from theia_parse.util.log import LogFactory
 
 
@@ -47,6 +47,6 @@ class DocumentParser:
         return parser.parse(path=path, llm=self._llm, config=self._config)
 
     def _save_parsed_doc(self, parsed_doc: ParsedDocument, path: Path) -> None:
-        save_path = path.with_suffix(PARSED_JSON_SUFFIX)
+        save_path = with_suffix(path, PARSED_JSON_SUFFIXES)
         with open(save_path, "wt") as outfile:
             json.dump(parsed_doc.model_dump(), outfile)

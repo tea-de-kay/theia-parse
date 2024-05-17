@@ -4,13 +4,12 @@ from typing import Generator
 
 from tqdm import tqdm
 
-from theia_parse.const import DUPLICATE_SUFFIX
+from theia_parse.const import DUPLICATE_SUFFIXES
 from theia_parse.llm.__spi__ import LLM, LlmApiSettings
 from theia_parse.llm.openai.openai_llm import OpenAiLLM
 from theia_parse.model import ParsedDocument, ParserConfig
 from theia_parse.parser.document_parser import DocumentParser
-from theia_parse.parser.file_parser import EXTENSION_TO_PARSER
-from theia_parse.util.files import get_md5_sum, is_file_supported
+from theia_parse.util.files import get_md5_sum, is_file_supported, with_suffix
 from theia_parse.util.log import LogFactory
 
 
@@ -78,5 +77,5 @@ class DirectoryParser:
                     yield parsed
 
     def _save_duplicate_info(self, path: Path, existing_path: Path) -> None:
-        save_path = path.with_suffix(DUPLICATE_SUFFIX)
+        save_path = with_suffix(path, DUPLICATE_SUFFIXES)
         save_path.write_text(str(existing_path))

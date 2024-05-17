@@ -3,6 +3,7 @@ import os
 from pathlib import Path
 
 from theia_parse.model import ContentElement, DocumentPage, ParsedDocument
+from theia_parse.util.files import has_suffixes
 
 
 PATH = (Path(__file__).parent.parent / "data/sample").resolve()
@@ -13,7 +14,7 @@ def main():
     for root, _, file_names in os.walk(PATH):
         for file_name in file_names:
             curr_path = Path(root) / file_name
-            if "".join(curr_path.suffixes[-2:]) == PARSED_JSON_SUFFIX:
+            if has_suffixes(curr_path, PARSED_JSON_SUFFIX):
                 with open(curr_path) as infile:
                     raw = json.load(infile)
                 doc = ParsedDocument(**raw)

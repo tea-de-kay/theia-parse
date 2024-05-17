@@ -1,2 +1,2 @@
-PARSED_JSON_SUFFIX = ".parsed.json"
-DUPLICATE_SUFFIX = ".duplicate"
+PARSED_JSON_SUFFIXES = [".parsed", ".json"]
+DUPLICATE_SUFFIXES = [".duplicate"]

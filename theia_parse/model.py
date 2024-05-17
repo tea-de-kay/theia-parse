@@ -46,6 +46,7 @@ class DocumentPage(BaseModel):
     raw_parsed: str
     raw_extracted: str
     token_usage: LLMUsage
+    metadata: dict[str, Any] = Field(default_factory=dict)
     error: bool = False
 
     def to_string(self) -> str:
