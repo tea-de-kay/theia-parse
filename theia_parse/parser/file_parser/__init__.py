@@ -19,3 +19,5 @@ def get_parser(path: Path) -> FileParser | None:
     if parser is None:
         _log.warning("Filetype not supported [path='{0}']", path)
         return
+
+    return parser
