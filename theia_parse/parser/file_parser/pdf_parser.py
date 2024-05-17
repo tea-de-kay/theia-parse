@@ -44,6 +44,7 @@ class PDFParser(FileParser):
             disable=not config.verbose,
             desc="pages in file",
             leave=False,
+            ncols=80,
         ):
             # TODO: Every image is resized to 1024x1024 (?)
             # Allow for multiple images per page to provide high resolution

@@ -53,6 +53,7 @@ class DirectoryParser:
                 sorted(f for f in file_names if is_file_supported(f)),
                 desc="files in dir",
                 disable=not self._config.verbose,
+                ncols=80,
             )
             for file_name in file_name_iterator:
                 current_path = Path(root) / file_name
