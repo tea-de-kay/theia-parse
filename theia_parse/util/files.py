@@ -1,5 +1,9 @@
+import json
 from hashlib import md5
 from pathlib import Path
+from typing import Any
+
+from pydantic import BaseModel
 
 from theia_parse.const import SUPPORTED_EXTENSIONS
 
@@ -46,3 +50,16 @@ def with_suffix(
         path_string = path_string.removesuffix(replace_suffixes)
         path = Path(path_string)
     return path.with_suffix(suffix)
+
+
+def write_json(path: Path | str, data: dict[str, Any] | BaseModel) -> None:
+    data = data.model_dump(mode="json") if isinstance(data, BaseModel) else data
+    with open(path, "wt") as outfile:
+        json.dump(data, outfile)
+
+
+def read_json(path: Path | str) -> dict[str, Any]:
+    with open(path) as infile:
+        data = json.load(infile)
+
+    return data

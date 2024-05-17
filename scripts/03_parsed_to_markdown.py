@@ -1,9 +1,8 @@
-import json
 import os
 from pathlib import Path
 
 from theia_parse.model import ContentElement, DocumentPage, ParsedDocument
-from theia_parse.util.files import has_suffixes
+from theia_parse.util.files import has_suffixes, read_json
 
 
 PATH = (Path(__file__).parent.parent / "data/sample").resolve()
@@ -15,8 +14,7 @@ def main():
         for file_name in file_names:
             curr_path = Path(root) / file_name
             if has_suffixes(curr_path, PARSED_JSON_SUFFIX):
-                with open(curr_path) as infile:
-                    raw = json.load(infile)
+                raw = read_json(curr_path)
                 doc = ParsedDocument(**raw)
                 text = doc_to_markdown(doc)
                 save_path = curr_path.with_suffix(".md")
