@@ -11,7 +11,7 @@ _log = LogFactory.get_logger()
 
 
 def restore_duplicates(dir: Path) -> int:
-    total = 0
+    counter = 0
     for root, _, file_names in os.walk(dir):
         for file_name in file_names:
             curr_path = Path(root) / file_name
@@ -30,6 +30,6 @@ def restore_duplicates(dir: Path) -> int:
                         curr_path,
                     )
                 os.remove(curr_path)
-                total += 1
+                counter += 1
 
-    return total
+    return counter
