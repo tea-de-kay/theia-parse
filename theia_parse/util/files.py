@@ -1,7 +1,7 @@
 from hashlib import md5
 from pathlib import Path
 
-from theia_parse import SUPPORTED_EXTENSIONS
+from theia_parse.const import SUPPORTED_EXTENSIONS
 
 
 def get_md5_sum(path: Path):
@@ -30,6 +30,19 @@ def has_suffixes(path: Path, suffixes: list[str] | str) -> bool:
     return path.suffixes[-n_suffixes:] == suffixes
 
 
-def with_suffix(path: Path, suffixes: list[str] | str) -> Path:
+def with_suffix(
+    path: Path,
+    suffixes: list[str] | str,
+    replace_suffixes: list[str] | str | None = None,
+) -> Path:
     suffix = suffixes if isinstance(suffixes, str) else "".join(suffixes)
+    if replace_suffixes:
+        path_string = str(path)
+        replace_suffixes = (
+            replace_suffixes
+            if isinstance(replace_suffixes, str)
+            else "".join(replace_suffixes)
+        )
+        path_string = path_string.removesuffix(replace_suffixes)
+        path = Path(path_string)
     return path.with_suffix(suffix)
