@@ -37,7 +37,6 @@ Format your output as a JSON object, following this schema:
 * {{ instruction }}
 {% endfor %}
 {% endif %}
-
 """  # noqa
 
 

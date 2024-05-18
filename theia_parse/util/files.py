@@ -40,7 +40,7 @@ def with_suffix(
     replace_suffixes: list[str] | str | None = None,
 ) -> Path:
     suffix = suffixes if isinstance(suffixes, str) else "".join(suffixes)
-    if replace_suffixes:
+    if replace_suffixes is not None:
         path_string = str(path)
         replace_suffixes = (
             replace_suffixes

@@ -3,7 +3,8 @@ import shutil
 from pathlib import Path
 
 from theia_parse.const import DUPLICATE_SUFFIXES, PARSED_JSON_SUFFIXES
-from theia_parse.util.files import has_suffixes, with_suffix
+from theia_parse.model import ParsedDocument
+from theia_parse.util.files import has_suffixes, read_json, with_suffix, write_json
 from theia_parse.util.log import LogFactory
 
 
@@ -17,17 +18,20 @@ def restore_duplicates(dir: Path) -> int:
             curr_path = Path(root) / file_name
             if has_suffixes(curr_path, DUPLICATE_SUFFIXES):
                 source_path = Path(curr_path.read_text())
+                source_path = with_suffix(source_path, PARSED_JSON_SUFFIXES)
+                dest_path = with_suffix(source_path, PARSED_JSON_SUFFIXES)
                 try:
-                    shutil.copy(
-                        with_suffix(source_path, PARSED_JSON_SUFFIXES),
-                        with_suffix(curr_path, PARSED_JSON_SUFFIXES),
-                    )
+                    shutil.copy(source_path, dest_path)
+                    parsed = ParsedDocument(**read_json(dest_path))
+                    # TODO: dest path hast json suffix, but should be original suffix
+                    parsed.path = str(dest_path)
+                    write_json(dest_path, parsed)
                 except Exception:
                     _log.warning(
                         "Could not restore duplicates "
                         "[source_path='{0}', current_path='{1}']",
                         source_path,
-                        curr_path,
+                        dest_path,
                     )
                 os.remove(curr_path)
                 counter += 1
