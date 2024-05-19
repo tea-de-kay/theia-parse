@@ -7,11 +7,13 @@ from theia_parse import DirectoryParser, ParserConfig
 from theia_parse.model import PromptAdditions
 
 
-PATH = (Path(__file__).parent.parent / "data/sample").resolve()
+PATH = (Path(__file__).parent.parent / "data/sample/02/").resolve()
 
 # GPT-4 Turbo prices
 PRICE_PER_REQUEST_TOKEN = 0.01 / 1_000
 PRICE_PER_RESPONSE_TOKEN = 0.029 / 1_000
+
+APPROXIMATE_PRICE_PER_PAGE = 0.05
 
 
 def main():
@@ -36,6 +38,18 @@ def main():
         ),
     )
     parser = DirectoryParser(config=config)
+
+    pages = parser.get_number_of_pages(PATH)
+    if pages:
+        total_pages, duplicate_pages = pages
+        expected_price = (total_pages - duplicate_pages) * APPROXIMATE_PRICE_PER_PAGE
+
+        tqdm.write(f"TOTAL PAGES: {total_pages}, DUPLICATE PAGES: {duplicate_pages}")
+        tqdm.write(f"EXPECTED PRICE: {expected_price:.2f}")
+
+        char = input("Continue ... [y/n]: ")
+        if char != "y":
+            return
 
     request_tokens = 0
     response_tokens = 0

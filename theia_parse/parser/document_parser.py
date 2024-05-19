@@ -37,7 +37,18 @@ class DocumentParser:
         parsed = parser.parse(path=path, llm=self._llm, config=self._config)
         if parsed is not None:
             if self._config.save_files:
-                save_path = with_suffix(path, PARSED_JSON_SUFFIXES)
+                save_path = with_suffix(
+                    path,
+                    PARSED_JSON_SUFFIXES,
+                    keep_original_suffix=True,
+                )
                 write_json(save_path, parsed)
 
         return parsed
+
+    def get_number_of_pages(self, path: Path) -> int | None:
+        path = Path(path)
+
+        parser = get_parser(path)
+        if parser is not None:
+            return parser.get_number_of_pages(path, self._config)

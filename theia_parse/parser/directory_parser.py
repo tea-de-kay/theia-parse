@@ -77,6 +77,35 @@ class DirectoryParser:
                     hash_to_path[md5_sum] = current_path
                     yield parsed
 
+    def get_number_of_pages(
+        self,
+        directory: str | Path,
+        existing_hash_to_path: dict[str, str | Path] | None = None,
+    ) -> tuple[int, int] | None:
+        directory = Path(directory)
+
+        if not directory.is_dir():
+            self._log.warning("Not a directory [path='{0}']", directory)
+            return
+
+        hash_to_path: dict[str, Path] = {}
+        if existing_hash_to_path is not None:
+            hash_to_path = {k: Path(v) for k, v in existing_hash_to_path.items()}
+
+        total_pages = 0
+        duplicate_pages = 0
+        for root, _, file_names in os.walk(directory):
+            for file_name in sorted(f for f in file_names if is_file_supported(f)):
+                current_path = Path(root) / file_name
+                n_pages = self._document_parser.get_number_of_pages(current_path)
+                total_pages += n_pages or 0
+                md5_sum = get_md5_sum(current_path)
+                if md5_sum in hash_to_path:
+                    duplicate_pages += n_pages or 0
+                hash_to_path[md5_sum] = current_path
+
+        return total_pages, duplicate_pages
+
     def _save_duplicate_info(self, path: Path, existing_path: Path) -> None:
-        save_path = with_suffix(path, DUPLICATE_SUFFIXES)
+        save_path = with_suffix(path, DUPLICATE_SUFFIXES, keep_original_suffix=True)
         save_path.write_text(str(existing_path))
