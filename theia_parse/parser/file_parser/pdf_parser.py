@@ -42,7 +42,7 @@ class PDFParser(FileParser):
         for pdf_page in tqdm(
             pdf.pages,
             disable=not config.verbose,
-            desc="pages in file",
+            desc="page in file",
             leave=False,
             ncols=80,
         ):
