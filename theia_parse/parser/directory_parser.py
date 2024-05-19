@@ -51,7 +51,7 @@ class DirectoryParser:
             self._log.info("Working on directory [dir_name='{0}']", root)
             file_name_iterator = tqdm(
                 sorted(f for f in file_names if is_file_supported(f)),
-                desc="files in dir",
+                desc="file in dir",
                 disable=not self._config.verbose,
                 ncols=80,
             )
