@@ -92,9 +92,11 @@ class PDFParser(FileParser):
             metadata=metadata,
         )
 
-    def get_number_of_pages(self, path: Path, config: ParserConfig) -> int | None:
+    def get_number_of_pages(self, path: Path, config: ParserConfig) -> int:
         try:
             pdf = pdfplumber.open(path)
             return len(pdf.pages)
         except Exception:
             self._log.error("Could not open pdf [path='{0}']", path)
+
+        return 0

@@ -46,9 +46,11 @@ class DocumentParser:
 
         return parsed
 
-    def get_number_of_pages(self, path: Path) -> int | None:
+    def get_number_of_pages(self, path: Path) -> int:
         path = Path(path)
 
         parser = get_parser(path)
         if parser is not None:
-            return parser.get_number_of_pages(path, self._config)
+            return parser.get_number_of_pages(path, self._config) or 0
+
+        return 0

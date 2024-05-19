@@ -16,5 +16,5 @@ class FileParser(ABC):
         pass
 
     @abstractmethod
-    def get_number_of_pages(self, path: Path, config: ParserConfig) -> int | None:
+    def get_number_of_pages(self, path: Path, config: ParserConfig) -> int:
         pass

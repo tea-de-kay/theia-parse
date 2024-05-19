@@ -81,12 +81,12 @@ class DirectoryParser:
         self,
         directory: str | Path,
         existing_hash_to_path: dict[str, str | Path] | None = None,
-    ) -> tuple[int, int] | None:
+    ) -> tuple[int, int]:
         directory = Path(directory)
 
         if not directory.is_dir():
             self._log.warning("Not a directory [path='{0}']", directory)
-            return
+            return 0, 0
 
         hash_to_path: dict[str, Path] = {}
         if existing_hash_to_path is not None:
