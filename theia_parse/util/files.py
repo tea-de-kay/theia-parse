@@ -36,13 +36,11 @@ def has_suffixes(path: Path, suffixes: list[str] | str) -> bool:
 
 def with_suffix(
     path: Path,
-    suffixes: list[str] | str,
+    suffixes: list[str] | str = "",
     replace_suffixes: list[str] | str | None = None,
-    keep_original_suffix: bool = False,
+    keep_original_suffix: bool = True,
 ) -> Path:
     suffix = suffixes if isinstance(suffixes, str) else "".join(suffixes)
-    if keep_original_suffix:
-        suffix = f"{path.suffix}{suffix}"
     if replace_suffixes is not None:
         path_string = str(path)
         replace_suffixes = (
@@ -52,6 +50,8 @@ def with_suffix(
         )
         path_string = f"{path_string.removesuffix(replace_suffixes)}{suffix}"
         return Path(path_string)
+    if keep_original_suffix:
+        suffix = f"{path.suffix}{suffix}"
     return path.with_suffix(suffix)
 
 

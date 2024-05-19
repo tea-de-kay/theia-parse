@@ -82,6 +82,10 @@ class DirectoryParser:
         directory: str | Path,
         existing_hash_to_path: dict[str, str | Path] | None = None,
     ) -> tuple[int, int]:
+        """
+        Returns (total number of pages, number of duplicate pages)
+        """
+
         directory = Path(directory)
 
         if not directory.is_dir():
@@ -107,5 +111,5 @@ class DirectoryParser:
         return total_pages, duplicate_pages
 
     def _save_duplicate_info(self, path: Path, existing_path: Path) -> None:
-        save_path = with_suffix(path, DUPLICATE_SUFFIXES, keep_original_suffix=True)
+        save_path = with_suffix(path, DUPLICATE_SUFFIXES)
         save_path.write_text(str(existing_path))

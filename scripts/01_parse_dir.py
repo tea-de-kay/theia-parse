@@ -7,7 +7,7 @@ from theia_parse import DirectoryParser, ParserConfig
 from theia_parse.model import PromptAdditions
 
 
-PATH = (Path(__file__).parent.parent / "data/sample/02/").resolve()
+PATH = (Path(__file__).parent.parent / "data/sample/03/").resolve()
 
 # GPT-4 Turbo prices
 PRICE_PER_REQUEST_TOKEN = 0.01 / 1_000

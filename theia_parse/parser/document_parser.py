@@ -37,11 +37,7 @@ class DocumentParser:
         parsed = parser.parse(path=path, llm=self._llm, config=self._config)
         if parsed is not None:
             if self._config.save_files:
-                save_path = with_suffix(
-                    path,
-                    PARSED_JSON_SUFFIXES,
-                    keep_original_suffix=True,
-                )
+                save_path = with_suffix(path, PARSED_JSON_SUFFIXES)
                 write_json(save_path, parsed)
 
         return parsed
