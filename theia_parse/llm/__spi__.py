@@ -5,7 +5,7 @@ from jinja2 import Environment as JinjaEnvironment
 from pydantic import BaseModel, ConfigDict
 
 from theia_parse.__spi__ import BaseEnvSettings
-from theia_parse.model import ContentElement, LLMUsage, PromptAdditions
+from theia_parse.model import ContentElement, LLMUsage
 
 
 class LlmApiSettings(BaseEnvSettings):
@@ -30,6 +30,13 @@ class LLMExtractionResult(BaseModel):
 class LLMGenerationConfig(BaseModel):
     temperature: float = 0
     max_tokens: int = 4096
+
+
+class PromptAdditions(BaseModel):
+    system_prompt_preamble: str | None = None
+    custom_instructions: list[str] | None = None
+    previous_headings: str | None = None
+    previous_structured_page_content: str | None = None
 
 
 class LLM(ABC):

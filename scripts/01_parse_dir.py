@@ -3,16 +3,15 @@ from pathlib import Path
 from dotenv import load_dotenv
 from tqdm import tqdm
 
-from theia_parse import DirectoryParser, ParserConfig
-from theia_parse.model import PromptAdditions
+from theia_parse import DirectoryParser
+from theia_parse.parser.__spi__ import DirectoryParserConfig, DocumentParserConfig
 
 
-PATH = (Path(__file__).parent.parent / "data/sample/03/").resolve()
+PATH = (Path(__file__).parent.parent / "data/sample/").resolve()
 
 # GPT-4 Turbo prices
 PRICE_PER_REQUEST_TOKEN = 0.01 / 1_000
 PRICE_PER_RESPONSE_TOKEN = 0.029 / 1_000
-
 APPROXIMATE_PRICE_PER_PAGE = 0.05
 
 
@@ -25,19 +24,19 @@ def main():
 
     load_dotenv()
 
-    config = ParserConfig(
+    config = DocumentParserConfig(
         verbose=True,
-        save_files=True,
-        prompt_additions=PromptAdditions(
-            custom_instructions=[
-                "Most pages will have a multilingual 2 column layout. Make sure to correctly separate the columns as separate content blocks per language.",  # noqa
-                "One column should be a single content block.",
-                "Do not convert layout columns to tables.",
-                "Keep mixed language headings as a single block including their numbering.",  # noqa
-            ]
-        ),
+        save_file=True,
+        custom_instructions=[
+            "Most pages will have a multilingual 2 column layout. Make sure to correctly separate the columns as separate content blocks per language.",  # noqa
+            "One column should be a single content block.",
+            "Do not convert layout columns to tables.",
+            "Keep mixed language headings as a single block including their numbering.",  # noqa
+        ],
     )
-    parser = DirectoryParser(config=config)
+    parser = DirectoryParser(
+        config=DirectoryParserConfig(document_parser_config=config),
+    )
 
     pages = parser.get_number_of_pages(PATH)
     if pages:

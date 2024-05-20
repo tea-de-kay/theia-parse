@@ -9,11 +9,12 @@ from theia_parse.llm.__spi__ import (
     LLMExtractionResult,
     LLMGenerationConfig,
     LLMResponse,
+    PromptAdditions,
     Prompts,
 )
 from theia_parse.llm.openai.prompt_templates import DEFAULT_PROMPTS
 from theia_parse.llm.response_parser.json_parser import JsonParser
-from theia_parse.model import ContentElement, LLMUsage, PromptAdditions
+from theia_parse.model import ContentElement, LLMUsage
 from theia_parse.util.log import LogFactory
 
 

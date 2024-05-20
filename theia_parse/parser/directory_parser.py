@@ -7,13 +7,14 @@ from tqdm import tqdm
 from theia_parse.const import DUPLICATE_SUFFIXES
 from theia_parse.llm.__spi__ import LLM, LlmApiSettings
 from theia_parse.llm.openai.openai_llm import OpenAiLLM
-from theia_parse.model import ParsedDocument, ParserConfig
+from theia_parse.model import ParsedDocument
+from theia_parse.parser.__spi__ import DirectoryParserConfig
 from theia_parse.parser.document_parser import DocumentParser
 from theia_parse.util.files import get_md5_sum, is_file_supported, with_suffix
 from theia_parse.util.log import LogFactory
 
 
-DEFAULT_DOCUMENT_PARSER_CONFIG = ParserConfig()
+DEFAULT_DIRECTORY_PARSER_CONFIG = DirectoryParserConfig()
 
 
 class DirectoryParser:
@@ -22,7 +23,7 @@ class DirectoryParser:
     def __init__(
         self,
         llm: LLM | None = None,
-        config: ParserConfig = DEFAULT_DOCUMENT_PARSER_CONFIG,
+        config: DirectoryParserConfig = DEFAULT_DIRECTORY_PARSER_CONFIG,
     ) -> None:
         if llm is None:
             self._llm = OpenAiLLM(config=LlmApiSettings())
@@ -30,7 +31,7 @@ class DirectoryParser:
             self._llm = llm
 
         self._config = config
-        self._document_parser = DocumentParser(self._llm, config)
+        self._document_parser = DocumentParser(self._llm, config.document_parser_config)
 
     def parse(
         self,

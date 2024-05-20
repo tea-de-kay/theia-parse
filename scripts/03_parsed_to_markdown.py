@@ -1,26 +1,26 @@
 import os
 from pathlib import Path
 
+from theia_parse.const import PARSED_JSON_SUFFIXES
 from theia_parse.model import ContentElement, DocumentPage, ParsedDocument
 from theia_parse.util.files import has_suffixes, read_json, with_suffix
 
 
 PATH = (Path(__file__).parent.parent / "data/sample").resolve()
-PARSED_JSON_SUFFIX = ".parsed.json"
 
 
 def main():
     for root, _, file_names in os.walk(PATH):
         for file_name in file_names:
             curr_path = Path(root) / file_name
-            if has_suffixes(curr_path, PARSED_JSON_SUFFIX):
+            if has_suffixes(curr_path, PARSED_JSON_SUFFIXES):
                 raw = read_json(curr_path)
                 doc = ParsedDocument(**raw)
                 text = doc_to_markdown(doc)
                 save_path = with_suffix(
                     curr_path,
                     ".parsed.md",
-                    replace_suffixes=PARSED_JSON_SUFFIX,
+                    replace_suffixes=PARSED_JSON_SUFFIXES,
                 )
                 save_path.write_text(text)
 

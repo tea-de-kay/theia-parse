@@ -2,8 +2,8 @@ from theia_parse.llm.__spi__ import Prompt, Prompts
 
 
 MM_EXTRACT_CONTENT_SYSTEM_PROMPT = """
-{% if system_preamble %}
-{{ system_preamble }}
+{% if system_prompt_preamble %}
+{{ system_prompt_preamble }}
 {% else %}
 You are an expert for document parsing for technical company documents. You are precise, structured and always follow the given instructions.
 {% endif %}

@@ -4,12 +4,6 @@ from typing import Any
 from pydantic import BaseModel, Field
 
 
-class LLMUsage(BaseModel):
-    request_tokens: int | None = None
-    response_tokens: int | None = None
-    total_tokens: int | None = None
-
-
 class ContentType(StrEnum):
     HEADING_1 = "heading-level-1"
     HEADING_2 = "heading-level-2"
@@ -40,6 +34,12 @@ class ContentElement(BaseModel):
             return int(self.type.value.split("-")[-1])
 
 
+class LLMUsage(BaseModel):
+    request_tokens: int | None = None
+    response_tokens: int | None = None
+    total_tokens: int | None = None
+
+
 class DocumentPage(BaseModel):
     page_nr: int
     content: list[ContentElement] | None
@@ -49,7 +49,7 @@ class DocumentPage(BaseModel):
     metadata: dict[str, Any] = Field(default_factory=dict)
     error: bool = False
 
-    def to_string(self) -> str:
+    def content_to_string(self) -> str:
         if self.content:
             return str([e.model_dump(mode="json") for e in self.content])
         else:
@@ -77,17 +77,3 @@ class ParsedDocument(BaseModel):
             response_tokens += page.token_usage.response_tokens or 0
 
         return LLMUsage(request_tokens=request_tokens, response_tokens=response_tokens)
-
-
-class PromptAdditions(BaseModel):
-    system_preamble: str | None = None
-    custom_instructions: list[str] | None = None
-    previous_headings: str | None = None
-    previous_structured_page_content: str | None = None
-
-
-class ParserConfig(BaseModel):
-    verbose: bool = True
-    save_files: bool = True
-    deduplicate_docs: bool = True
-    prompt_additions: PromptAdditions = PromptAdditions()

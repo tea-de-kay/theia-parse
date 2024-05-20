@@ -4,12 +4,12 @@ from pathlib import Path
 import pdfplumber
 from tqdm import tqdm
 
-from theia_parse.llm.__spi__ import LLM
+from theia_parse.llm.__spi__ import LLM, PromptAdditions
 from theia_parse.model import (
     DocumentPage,
     ParsedDocument,
-    ParserConfig,
 )
+from theia_parse.parser.__spi__ import DocumentParserConfig
 from theia_parse.parser.file_parser.__spi__ import FileParser
 from theia_parse.util.files import get_md5_sum
 from theia_parse.util.log import LogFactory
@@ -26,7 +26,7 @@ class PDFParser(FileParser):
         self,
         path: Path,
         llm: LLM,
-        config: ParserConfig,
+        config: DocumentParserConfig,
     ) -> ParsedDocument | None:
         try:
             pdf = pdfplumber.open(path)
@@ -37,7 +37,10 @@ class PDFParser(FileParser):
         metadata = pdf.metadata
         md5_sum = get_md5_sum(path)
 
-        prompt_additions = config.prompt_additions.model_copy(deep=True)
+        prompt_additions = PromptAdditions(
+            system_prompt_preamble=config.system_prompt_preamble,
+            custom_instructions=config.custom_instructions,
+        )
         pages: list[DocumentPage] = []
         for pdf_page in tqdm(
             pdf.pages,
@@ -63,7 +66,7 @@ class PDFParser(FileParser):
 
             prompt_additions.previous_headings = str(previous_headings)
             prompt_additions.previous_structured_page_content = (
-                pages[-1].to_string() if pages else None
+                pages[-1].content_to_string() if pages else None
             )
 
             result = llm.extract(
@@ -92,7 +95,7 @@ class PDFParser(FileParser):
             metadata=metadata,
         )
 
-    def get_number_of_pages(self, path: Path, config: ParserConfig) -> int:
+    def get_number_of_pages(self, path: Path, config: DocumentParserConfig) -> int:
         try:
             pdf = pdfplumber.open(path)
             return len(pdf.pages)

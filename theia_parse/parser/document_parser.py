@@ -3,13 +3,14 @@ from pathlib import Path
 from theia_parse.const import PARSED_JSON_SUFFIXES
 from theia_parse.llm.__spi__ import LLM, LlmApiSettings
 from theia_parse.llm.openai.openai_llm import OpenAiLLM
-from theia_parse.model import ParsedDocument, ParserConfig
+from theia_parse.model import ParsedDocument
+from theia_parse.parser.__spi__ import DocumentParserConfig
 from theia_parse.parser.file_parser import get_parser
 from theia_parse.util.files import with_suffix, write_json
 from theia_parse.util.log import LogFactory
 
 
-DEFAULT_DOCUMENT_PARSER_CONFIG = ParserConfig()
+DEFAULT_DOCUMENT_PARSER_CONFIG = DocumentParserConfig()
 
 
 class DocumentParser:
@@ -18,7 +19,7 @@ class DocumentParser:
     def __init__(
         self,
         llm: LLM | None = None,
-        config: ParserConfig = DEFAULT_DOCUMENT_PARSER_CONFIG,
+        config: DocumentParserConfig = DEFAULT_DOCUMENT_PARSER_CONFIG,
     ) -> None:
         if llm is None:
             self._llm = OpenAiLLM(config=LlmApiSettings())
@@ -36,7 +37,7 @@ class DocumentParser:
 
         parsed = parser.parse(path=path, llm=self._llm, config=self._config)
         if parsed is not None:
-            if self._config.save_files:
+            if self._config.save_file:
                 save_path = with_suffix(path, PARSED_JSON_SUFFIXES)
                 write_json(save_path, parsed)
 
