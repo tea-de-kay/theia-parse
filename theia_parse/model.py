@@ -4,6 +4,12 @@ from typing import Any
 from pydantic import BaseModel, Field
 
 
+class LLMUsage(BaseModel):
+    request_tokens: int | None = None
+    response_tokens: int | None = None
+    total_tokens: int | None = None
+
+
 class ContentType(StrEnum):
     HEADING_1 = "heading-level-1"
     HEADING_2 = "heading-level-2"
@@ -34,12 +40,6 @@ class ContentElement(BaseModel):
             return int(self.type.value.split("-")[-1])
 
 
-class LLMUsage(BaseModel):
-    request_tokens: int | None = None
-    response_tokens: int | None = None
-    total_tokens: int | None = None
-
-
 class DocumentPage(BaseModel):
     page_nr: int
     content: list[ContentElement] | None
@@ -65,15 +65,15 @@ class DocumentPage(BaseModel):
 class ParsedDocument(BaseModel):
     path: str
     md5_sum: str | None = None
-    pages: list[DocumentPage]
+    content: list[DocumentPage]  # TODO: add more content types
     metadata: dict[str, Any] = Field(default_factory=dict)
 
     @property
     def token_usage(self) -> LLMUsage:
         request_tokens = 0
         response_tokens = 0
-        for page in self.pages:
-            request_tokens += page.token_usage.request_tokens or 0
-            response_tokens += page.token_usage.response_tokens or 0
+        for element in self.content:
+            request_tokens += element.token_usage.request_tokens or 0
+            response_tokens += element.token_usage.response_tokens or 0
 
         return LLMUsage(request_tokens=request_tokens, response_tokens=response_tokens)

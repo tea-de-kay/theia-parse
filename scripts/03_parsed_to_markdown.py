@@ -47,7 +47,7 @@ def doc_to_markdown(doc: ParsedDocument) -> str:
     if doc.metadata:
         text = f"{text}\n{str(doc.metadata)}"
 
-    for page in doc.pages:
+    for page in doc.content:
         text = f"{text}\n\n\n\n{page_to_markdown(page)}"
 
     return text

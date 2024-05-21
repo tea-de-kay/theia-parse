@@ -91,7 +91,7 @@ class PDFParser(FileParser):
         return ParsedDocument(
             path=str(path),
             md5_sum=md5_sum,
-            pages=pages,
+            content=pages,
             metadata=metadata,
         )
 
