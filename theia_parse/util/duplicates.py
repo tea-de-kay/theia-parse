@@ -22,7 +22,7 @@ def restore_duplicate_parsed_doc(source_path: Path, dest_path: Path) -> bool:
         write_json(parsed_dest_path, parsed)
     except Exception:
         _log.warning(
-            "Could not restore duplicates " "[source_path='{0}', dest_path='{1}']",
+            "Could not restore duplicates source_path='{0}', dest_path='{1}']",
             parsed_source_path,
             parsed_dest_path,
         )

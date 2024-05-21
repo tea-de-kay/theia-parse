@@ -5,7 +5,7 @@ MM_EXTRACT_CONTENT_SYSTEM_PROMPT = """
 {% if system_prompt_preamble %}
 {{ system_prompt_preamble }}
 {% else %}
-You are an expert for document parsing for technical company documents. You are precise, structured and always follow the given instructions.
+You are an expert for document parsing. You are precise, structured and always follow the given instructions.
 {% endif %}
 
 You are provided with:
