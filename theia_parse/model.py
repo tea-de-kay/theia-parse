@@ -33,11 +33,16 @@ class ContentElement(BaseModel):
         return self.type.value.startswith("heading")
 
     @property
-    def heading_level(self) -> int | None:
+    def heading_level(self) -> int:
         if not self.is_heading():
-            return
+            return 0
         else:
-            return int(self.type.value.split("-")[-1])
+            try:
+                level = int(self.type.value.split("-")[-1])
+            except Exception:
+                level = 0
+
+            return level
 
 
 class DocumentPage(BaseModel):
