@@ -30,6 +30,7 @@ class LLMExtractionResult(BaseModel):
 class LLMGenerationConfig(BaseModel):
     temperature: float = 0
     max_tokens: int = 4096
+    json_mode: bool = True
 
 
 class PromptAdditions(BaseModel):

@@ -27,7 +27,7 @@ class ContentType(StrEnum):
 class ContentElement(BaseModel):
     type: ContentType
     content: str
-    language: str
+    language: str | None = None
 
     def is_heading(self) -> bool:
         return self.type.value.startswith("heading")

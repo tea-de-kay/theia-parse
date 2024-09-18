@@ -1,7 +1,8 @@
 from base64 import b64encode
 from typing import Any
 
-from openai import AzureOpenAI
+from openai import NOT_GIVEN, AzureOpenAI, NotGiven
+from openai.types.chat.completion_create_params import ResponseFormat
 
 from theia_parse.llm.__spi__ import (
     LLM,
@@ -38,8 +39,13 @@ class OpenAiLLM(LLM):
         self._json_parser = JsonParser()
 
     def generate(
-        self, messages: list[dict], config: LLMGenerationConfig
+        self,
+        messages: list[dict],
+        config: LLMGenerationConfig,
     ) -> LLMResponse | None:
+        response_format: ResponseFormat | NotGiven = NOT_GIVEN
+        if config.json_mode:
+            response_format = {"type": "json_object"}
         try:
             self._log.trace("Calling LLM [messages='{0}']", messages)
             response = self._client.chat.completions.create(
@@ -47,6 +53,7 @@ class OpenAiLLM(LLM):
                 messages=messages,
                 temperature=config.temperature,
                 max_tokens=config.max_tokens,
+                response_format=response_format,
             )
             self._log.trace("Raw LLM response [response='{0}']", response)
         except Exception as e:
@@ -76,7 +83,7 @@ class OpenAiLLM(LLM):
 
         response = self.generate(
             messages,
-            LLMGenerationConfig(temperature=0, max_tokens=4096),
+            LLMGenerationConfig(temperature=0, max_tokens=4096, json_mode=True),
         )
 
         if response is None:
