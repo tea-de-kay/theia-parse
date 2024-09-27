@@ -63,6 +63,7 @@ class PromptAdditions(BaseModel):
     raw_extracted: str | None = None
     previous_headings: list[str] | None = None
     previous_parsed_pages: list[str] | None = None
+    embedded_images: bool | None = None
 
     @staticmethod
     def create(
@@ -70,6 +71,7 @@ class PromptAdditions(BaseModel):
         raw_extracted: str | None = None,
         previous_headings: Deque[ContentElement] | None = None,
         previous_parsed_pages: Deque[DocumentPage] | None = None,
+        embedded_images: list[Medium] | None = None,
     ) -> PromptAdditions:
         return PromptAdditions(
             system_prompt_preamble=config.system_prompt_preamble,
@@ -79,6 +81,7 @@ class PromptAdditions(BaseModel):
             previous_parsed_pages=PromptAdditions._previous_parsed_pages(
                 previous_parsed_pages
             ),
+            embedded_images=bool(embedded_images),
         )
 
     @staticmethod
@@ -118,10 +121,3 @@ class Prompt:
 
     def render(self, data: dict[str, Any]) -> str:
         return self._template.render(**data).strip()
-
-
-class Prompts(BaseModel):
-    model_config = ConfigDict(arbitrary_types_allowed=True)
-
-    mm_extract_content_system_prompt: Prompt
-    mm_extract_content_user_prompt: Prompt
