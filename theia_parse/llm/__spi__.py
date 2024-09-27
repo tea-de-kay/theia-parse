@@ -1,14 +1,21 @@
+from __future__ import annotations
+
 from abc import ABC, abstractmethod
-from typing import Any, Literal
+from typing import Any, Deque, Literal
 
 from jinja2 import Environment as JinjaEnvironment
 from pydantic import BaseModel, ConfigDict
 
 from theia_parse.__spi__ import BaseEnvSettings
-from theia_parse.model import ContentElement, LlmUsage, Medium
+from theia_parse.model import ContentElement, DocumentPage, LlmUsage, Medium
+from theia_parse.parser.__spi__ import PromptConfig
+
+
+LlmApiProvider = Literal["azure_openai"]
 
 
 class LlmApiSettings(BaseModel):
+    provider: LlmApiProvider = "azure_openai"
     api_version: str
     model: str
     endpoint: str
@@ -16,6 +23,7 @@ class LlmApiSettings(BaseModel):
 
 
 class LlmApiEnvSettings(BaseEnvSettings):
+    PROVIDER: LlmApiProvider = "azure_openai"
     AZURE_OPENAI_API_VERSION: str = ""
     AZURE_OPENAI_API_ENDPOINT: str = ""
     AZURE_OPENAI_API_DEPLOYMENT: str = ""
@@ -23,6 +31,7 @@ class LlmApiEnvSettings(BaseEnvSettings):
 
     def to_settings(self) -> LlmApiSettings:
         return LlmApiSettings(
+            provider=self.PROVIDER,
             api_version=self.AZURE_OPENAI_API_VERSION,
             endpoint=self.AZURE_OPENAI_API_ENDPOINT,
             model=self.AZURE_OPENAI_API_DEPLOYMENT,
@@ -51,8 +60,40 @@ class LlmGenerationConfig(BaseModel):
 class PromptAdditions(BaseModel):
     system_prompt_preamble: str | None = None
     custom_instructions: list[str] | None = None
-    previous_headings: str | None = None
-    previous_structured_page_content: str | None = None
+    raw_extracted: str | None = None
+    previous_headings: list[str] | None = None
+    previous_parsed_pages: list[str] | None = None
+
+    @staticmethod
+    def create(
+        config: PromptConfig,
+        raw_extracted: str | None = None,
+        previous_headings: Deque[ContentElement] | None = None,
+        previous_parsed_pages: Deque[DocumentPage] | None = None,
+    ) -> PromptAdditions:
+        return PromptAdditions(
+            system_prompt_preamble=config.system_prompt_preamble,
+            custom_instructions=config.custom_instructions,
+            raw_extracted=raw_extracted if config.include_raw_extracted else None,
+            previous_headings=PromptAdditions._previous_headings(previous_headings),
+            previous_parsed_pages=PromptAdditions._previous_parsed_pages(
+                previous_parsed_pages
+            ),
+        )
+
+    @staticmethod
+    def _previous_headings(
+        previous_headings: Deque[ContentElement] | None,
+    ) -> list[str] | None:
+        if previous_headings is not None:
+            return [f"{h.type}: {h.content}" for h in previous_headings]
+
+    @staticmethod
+    def _previous_parsed_pages(
+        previous_parsed_pages: Deque[DocumentPage] | None,
+    ) -> list[str] | None:
+        if previous_parsed_pages is not None:
+            return [p.content_to_string() for p in previous_parsed_pages]
 
 
 class LLM(ABC):

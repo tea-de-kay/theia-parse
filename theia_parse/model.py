@@ -82,6 +82,7 @@ class DocumentPage(BaseModel):
     error: bool = False
 
     def content_to_string(self) -> str:
+        # TODO: use template / better representation
         if self.content:
             return str([e.model_dump(mode="json") for e in self.content])
         else:

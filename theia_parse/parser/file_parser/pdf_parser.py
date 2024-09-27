@@ -1,17 +1,24 @@
 import hashlib
+from collections import deque
 from collections.abc import Iterable
 from functools import cached_property
 from io import BytesIO
 from pathlib import Path
+from typing import Deque
 from uuid import NAMESPACE_OID, uuid5
 
 import pdfplumber
 from pdfplumber.page import Page as PdfPage
-from PIL import Image, ImageDraw, ImageFont
+from PIL.Image import Image
 
-from theia_parse.llm.__spi__ import LLM, PromptAdditions
-from theia_parse.model import DocumentPage, Medium, ParsedDocument
-from theia_parse.parser.__spi__ import DocumentParserConfig, ImageExtractionConfig
+from theia_parse.llm import get_llm
+from theia_parse.llm.__spi__ import LlmApiSettings, LlmResponse, PromptAdditions
+from theia_parse.model import ContentElement, DocumentPage, Medium, ParsedDocument
+from theia_parse.parser.__spi__ import (
+    DocumentParserConfig,
+    ImageExtractionConfig,
+    PromptConfig,
+)
 from theia_parse.parser.file_parser.__spi__ import FileParser
 from theia_parse.util.files import get_md5_sum
 from theia_parse.util.image import caption_image
@@ -25,7 +32,7 @@ LAST_HEADINGS_N = 10
 _log = LogFactory.get_logger()
 
 
-class PdfPageEmbeddedImage:
+class EmbeddedPdfPageImage:
     def __init__(self, page: PdfPage, idx: int, config: ImageExtractionConfig) -> None:
         self._page = page
         self._idx = idx
@@ -33,7 +40,7 @@ class PdfPageEmbeddedImage:
         self._config = config
 
     @cached_property
-    def raw_image(self) -> Image.Image:
+    def raw_image(self) -> Image:
         crop = self._page.within_bbox(self.bbox, strict=False)
         image = crop.to_image(resolution=self._config.resolution).original
 
@@ -91,20 +98,26 @@ class PdfPageEmbeddedImage:
 
 
 class PDFParser(FileParser):
+    def __init__(self, llm_api_settings: LlmApiSettings) -> None:
+        self._llm = get_llm(llm_api_settings)
+
     def parse_paged(
         self,
         path: Path,
-        llm: LLM,
         config: DocumentParserConfig,
-    ) -> Iterable[ParsedDocument | None]:
+    ) -> Iterable[DocumentPage | None]:
+        headings: Deque[ContentElement] = deque(
+            maxlen=config.prompt_config.consider_last_headings_n
+        )
+        parsed_pages: Deque[DocumentPage] = deque(
+            maxlen=config.prompt_config.consider_last_parsed_pages_n
+        )
+
         with pdfplumber.open(path) as pdf:
             for page in pdf.pages:
+                yield self._parse_page(page, headings, parsed_pages, config)
                 page.close()
 
-        prompt_additions = PromptAdditions(
-            system_prompt_preamble=config.system_prompt_preamble,
-            custom_instructions=config.custom_instructions,
-        )
         pages: list[DocumentPage] = []
         for pdf_page in tqdm(
             pdf.pages,
@@ -159,26 +172,19 @@ class PDFParser(FileParser):
             metadata=metadata,
         )
 
-    def _parse_page(self, page: PdfPage, config: DocumentParserConfig) -> DocumentPage:
-        image_config = config.image_extraction_config
-        full_page_image = Medium.create_from_image(
-            id="dummy",
-            image_format=image_config.image_format,
-            raw=page.to_image(resolution=image_config.resolution).original,
+    def _parse_page(
+        self,
+        page: PdfPage,
+        headings: Deque[ContentElement],
+        parsed_pages: Deque[DocumentPage],
+        config: DocumentParserConfig,
+    ) -> DocumentPage:
+        page_image, embedded_images = self._get_images(
+            page, config.image_extraction_config
         )
 
         # TODO: use better parser
         raw_extracted_text = page.extract_text()
-        previous_headings = [
-            h.model_dump(mode="json")
-            for headings in [p.get_headings() for p in pages]
-            for h in headings
-        ][-LAST_HEADINGS_N:]
-
-        prompt_additions.previous_headings = str(previous_headings)
-        prompt_additions.previous_structured_page_content = (
-            pages[-1].content_to_string() if pages else None
-        )
 
         result = llm.extract(
             image_data=img_data.read(),
@@ -212,3 +218,37 @@ class PDFParser(FileParser):
             _log.error("Could not open pdf [path='{0}']", path)
 
         return 0
+
+    def _call_llm(
+        self,
+        config: PromptConfig,
+        raw_extracted: str,
+        headings: Deque[ContentElement],
+        parsed_pages: Deque[DocumentPage],
+        page_image: Medium,
+        embedded_images: list[Medium],
+    ) -> LlmResponse:
+        prompt_addtions = PromptAdditions.create(
+            config=config,
+            raw_extracted=raw_extracted,
+            previous_headings=headings,
+            previous_parsed_pages=parsed_pages,
+        )
+
+        self._llm.generate()
+
+    def _get_images(
+        self,
+        page: PdfPage,
+        config: ImageExtractionConfig,
+    ) -> tuple[Medium, list[EmbeddedPdfPageImage]]:
+        full_page_image = Medium.create_from_image(
+            id="dummy",
+            image_format=config.image_format,
+            raw=page.to_image(resolution=config.resolution).original,
+        )
+        embedded_images = [
+            EmbeddedPdfPageImage(page, idx, config) for idx in range(len(page.images))
+        ]
+
+        return full_page_image, embedded_images

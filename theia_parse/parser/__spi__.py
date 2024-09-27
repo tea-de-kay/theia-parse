@@ -16,11 +16,18 @@ class ImageExtractionConfig(BaseModel):
     image_format: ImageFormat = "webp"
 
 
+class PromptConfig(BaseModel):
+    system_prompt_preamble: str | None = None
+    custom_instructions: list[str] | None = None
+    consider_last_headings_n: int = 10
+    consider_last_parsed_pages_n: int = 0
+    include_raw_extracted: bool = False
+
+
 class DocumentParserConfig(BaseModel):
     verbose: bool = True
     save_file: bool = True
-    system_prompt_preamble: str | None = None
-    custom_instructions: list[str] | None = None
+    prompt_config: PromptConfig = PromptConfig()
     image_extraction_config: ImageExtractionConfig = ImageExtractionConfig()
 
 
