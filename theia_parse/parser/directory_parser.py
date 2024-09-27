@@ -5,8 +5,8 @@ from typing import Generator
 from tqdm import tqdm
 
 from theia_parse.const import DUPLICATE_SUFFIXES
-from theia_parse.llm.__spi__ import LLM, LlmApiSettings
-from theia_parse.llm.openai.openai_llm import OpenAiLLM
+from theia_parse.llm.__spi__ import LLM, LlmApiEnvSettings
+from theia_parse.llm.openai.azure_openai_llm import AzureOpenAiLLM
 from theia_parse.model import ParsedDocument
 from theia_parse.parser.__spi__ import DirectoryParserConfig
 from theia_parse.parser.document_parser import DocumentParser
@@ -26,7 +26,7 @@ class DirectoryParser:
         config: DirectoryParserConfig = DEFAULT_DIRECTORY_PARSER_CONFIG,
     ) -> None:
         if llm is None:
-            self._llm = OpenAiLLM(config=LlmApiSettings())
+            self._llm = AzureOpenAiLLM(config=LlmApiEnvSettings())
         else:
             self._llm = llm
 

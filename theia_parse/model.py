@@ -1,10 +1,17 @@
+from __future__ import annotations
+
+from base64 import b64encode
 from enum import StrEnum
 from typing import Any
 
-from pydantic import BaseModel, Field
+from PIL.Image import Image
+from pydantic import BaseModel
+
+from theia_parse.types import ImageFormat
+from theia_parse.util.image import image_to_bytes
 
 
-class LLMUsage(BaseModel):
+class LlmUsage(BaseModel):
     request_tokens: int | None = None
     response_tokens: int | None = None
     total_tokens: int | None = None
@@ -31,14 +38,15 @@ class ContentType(StrEnum):
 class ContentElement(BaseModel):
     type: ContentType
     content: str
-    language: str | None = None
+    medium_id: str | None = None
 
+    @property
     def is_heading(self) -> bool:
         return self.type.value.startswith("heading")
 
     @property
     def heading_level(self) -> int:
-        if not self.is_heading():
+        if not self.is_heading:
             return 0
         else:
             try:
@@ -49,13 +57,28 @@ class ContentElement(BaseModel):
             return level
 
 
+class Medium(BaseModel):
+    id: str
+    mime_type: str
+    content_b64: str
+
+    @staticmethod
+    def create_from_image(id: str, image_format: ImageFormat, raw: Image) -> Medium:
+        data = image_to_bytes(raw, image_format)
+        mime_type = f"image/{format}"
+        return Medium(
+            id=id, mime_type=mime_type, content_b64=b64encode(data).decode("utf-8")
+        )
+
+
 class DocumentPage(BaseModel):
     page_nr: int
-    content: list[ContentElement] | None
-    raw_parsed: str
+    content: list[ContentElement]
+    media: list[Medium] = []
     raw_extracted: str
-    token_usage: LLMUsage
-    metadata: dict[str, Any] = Field(default_factory=dict)
+    raw_parsed: str
+    token_usage: LlmUsage
+    metadata: dict[str, Any] = {}
     error: bool = False
 
     def content_to_string(self) -> str:
@@ -65,24 +88,21 @@ class DocumentPage(BaseModel):
             return ""
 
     def get_headings(self) -> list[ContentElement]:
-        if self.content:
-            return [e for e in self.content if e.is_heading()]
-        else:
-            return []
+        return [e for e in self.content if e.is_heading]
 
 
 class ParsedDocument(BaseModel):
     path: str
     md5_sum: str | None = None
-    content: list[DocumentPage]  # TODO: add more content types
-    metadata: dict[str, Any] = Field(default_factory=dict)
+    content: list[DocumentPage]
+    metadata: dict[str, Any] = {}
 
     @property
-    def token_usage(self) -> LLMUsage:
+    def token_usage(self) -> LlmUsage:
         request_tokens = 0
         response_tokens = 0
         for element in self.content:
             request_tokens += element.token_usage.request_tokens or 0
             response_tokens += element.token_usage.response_tokens or 0
 
-        return LLMUsage(request_tokens=request_tokens, response_tokens=response_tokens)
+        return LlmUsage(request_tokens=request_tokens, response_tokens=response_tokens)

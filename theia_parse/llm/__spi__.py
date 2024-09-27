@@ -1,35 +1,50 @@
 from abc import ABC, abstractmethod
-from typing import Any
+from typing import Any, Literal
 
 from jinja2 import Environment as JinjaEnvironment
 from pydantic import BaseModel, ConfigDict
 
 from theia_parse.__spi__ import BaseEnvSettings
-from theia_parse.model import ContentElement, LLMUsage
+from theia_parse.model import ContentElement, LlmUsage, Medium
 
 
-class LlmApiSettings(BaseEnvSettings):
+class LlmApiSettings(BaseModel):
+    api_version: str
+    model: str
+    endpoint: str
+    key: str
+
+
+class LlmApiEnvSettings(BaseEnvSettings):
     AZURE_OPENAI_API_VERSION: str = ""
-    AZURE_OPENAI_API_BASE: str = ""
+    AZURE_OPENAI_API_ENDPOINT: str = ""
     AZURE_OPENAI_API_DEPLOYMENT: str = ""
     AZURE_OPENAI_API_KEY: str = ""
 
+    def to_settings(self) -> LlmApiSettings:
+        return LlmApiSettings(
+            api_version=self.AZURE_OPENAI_API_VERSION,
+            endpoint=self.AZURE_OPENAI_API_ENDPOINT,
+            model=self.AZURE_OPENAI_API_DEPLOYMENT,
+            key=self.AZURE_OPENAI_API_KEY,
+        )
 
-class LLMResponse(BaseModel):
+
+class LlmResponse(BaseModel):
     raw: str
-    usage: LLMUsage = LLMUsage()
+    usage: LlmUsage = LlmUsage()
 
 
-class LLMExtractionResult(BaseModel):
+class LlmExtractionResult(BaseModel):
     raw: str
     content: list[ContentElement] | None = None
-    usage: LLMUsage = LLMUsage()
+    usage: LlmUsage = LlmUsage()
     error: bool = False
 
 
-class LLMGenerationConfig(BaseModel):
+class LlmGenerationConfig(BaseModel):
     temperature: float = 0
-    max_tokens: int = 4096
+    max_tokens: int | None = None
     json_mode: bool = True
 
 
@@ -46,12 +61,13 @@ class LLM(ABC):
     """
 
     @abstractmethod
-    def extract(
+    def generate(
         self,
-        image_data: bytes | None,
-        raw_extracted_text: str | None,
-        prompt_additions: PromptAdditions,
-    ) -> LLMExtractionResult:
+        system_prompt: str,
+        user_prompt: str,
+        images: list[Medium],
+        config: LlmGenerationConfig,
+    ) -> LlmResponse | None:
         pass
 
 

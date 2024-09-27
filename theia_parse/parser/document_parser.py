@@ -1,8 +1,8 @@
 from pathlib import Path
 
 from theia_parse.const import PARSED_JSON_SUFFIXES
-from theia_parse.llm.__spi__ import LLM, LlmApiSettings
-from theia_parse.llm.openai.openai_llm import OpenAiLLM
+from theia_parse.llm.__spi__ import LLM, LlmApiEnvSettings
+from theia_parse.llm.openai.azure_openai_llm import AzureOpenAiLLM
 from theia_parse.model import ParsedDocument
 from theia_parse.parser.__spi__ import DocumentParserConfig
 from theia_parse.parser.file_parser import get_parser
@@ -12,17 +12,17 @@ from theia_parse.util.log import LogFactory
 
 DEFAULT_DOCUMENT_PARSER_CONFIG = DocumentParserConfig()
 
+_log = LogFactory.get_logger()
+
 
 class DocumentParser:
-    _log = LogFactory.get_logger()
-
     def __init__(
         self,
         llm: LLM | None = None,
         config: DocumentParserConfig = DEFAULT_DOCUMENT_PARSER_CONFIG,
     ) -> None:
         if llm is None:
-            self._llm = OpenAiLLM(config=LlmApiSettings())
+            self._llm = AzureOpenAiLLM(config=LlmApiEnvSettings())
         else:
             self._llm = llm
 
@@ -43,11 +43,9 @@ class DocumentParser:
 
         return parsed
 
-    def get_number_of_pages(self, path: Path) -> int:
-        path = Path(path)
-
+    def get_number_of_pages(self, path: Path) -> int | None:
         parser = get_parser(path)
         if parser is not None:
-            return parser.get_number_of_pages(path, self._config) or 0
+            return parser.get_number_of_pages(path, self._config)
 
-        return 0
+        return
