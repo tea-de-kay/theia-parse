@@ -60,7 +60,7 @@ class LlmGenerationConfig(BaseModel):
 class PromptAdditions(BaseModel):
     system_prompt_preamble: str | None = None
     custom_instructions: list[str] | None = None
-    raw_extracted: str | None = None
+    raw_extracted_text: str | None = None
     previous_headings: list[str] | None = None
     previous_parsed_pages: list[str] | None = None
     embedded_images: bool | None = None
@@ -68,7 +68,7 @@ class PromptAdditions(BaseModel):
     @staticmethod
     def create(
         config: PromptConfig,
-        raw_extracted: str | None = None,
+        raw_extracted_text: str | None = None,
         previous_headings: Deque[ContentElement] | None = None,
         previous_parsed_pages: Deque[DocumentPage] | None = None,
         embedded_images: list[Medium] | None = None,
@@ -76,13 +76,18 @@ class PromptAdditions(BaseModel):
         return PromptAdditions(
             system_prompt_preamble=config.system_prompt_preamble,
             custom_instructions=config.custom_instructions,
-            raw_extracted=raw_extracted if config.include_raw_extracted else None,
+            raw_extracted_text=(
+                raw_extracted_text if config.include_raw_extracted_text else None
+            ),
             previous_headings=PromptAdditions._previous_headings(previous_headings),
             previous_parsed_pages=PromptAdditions._previous_parsed_pages(
                 previous_parsed_pages
             ),
             embedded_images=bool(embedded_images),
         )
+
+    def to_dict(self) -> dict[str, Any]:
+        return self.model_dump(exclude_none=True)
 
     @staticmethod
     def _previous_headings(

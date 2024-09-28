@@ -72,10 +72,10 @@ class Medium(BaseModel):
 
 
 class DocumentPage(BaseModel):
-    page_nr: int
+    page_number: int
     content: list[ContentElement]
     media: list[Medium] = []
-    raw_extracted: str
+    raw_extracted_text: str
     raw_parsed: str
     token_usage: LlmUsage
     metadata: dict[str, Any] = {}

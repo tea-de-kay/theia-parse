@@ -4,7 +4,7 @@ from collections.abc import Iterable
 from functools import cached_property
 from io import BytesIO
 from pathlib import Path
-from typing import Deque
+from typing import Any, Deque
 from uuid import NAMESPACE_OID, uuid5
 
 import pdfplumber
@@ -12,7 +12,18 @@ from pdfplumber.page import Page as PdfPage
 from PIL.Image import Image
 
 from theia_parse.llm import get_llm
-from theia_parse.llm.__spi__ import LlmApiSettings, LlmResponse, PromptAdditions
+from theia_parse.llm.__spi__ import (
+    LlmApiSettings,
+    LlmGenerationConfig,
+    LlmResponse,
+    Prompt,
+    PromptAdditions,
+)
+from theia_parse.llm.prompt_templates import (
+    PDF_EXTRACT_CONTENT_SYSTEM_PROMPT_TEMPLATE,
+    PDF_EXTRACT_CONTENT_USER_PROMPT_TEMPLATE,
+)
+from theia_parse.llm.response_parser.json_parser import JsonParser
 from theia_parse.model import ContentElement, DocumentPage, Medium, ParsedDocument
 from theia_parse.parser.__spi__ import (
     DocumentParserConfig,
@@ -100,6 +111,9 @@ class EmbeddedPdfPageImage:
 class PDFParser(FileParser):
     def __init__(self, llm_api_settings: LlmApiSettings) -> None:
         self._llm = get_llm(llm_api_settings)
+        self._system_prompt = Prompt(PDF_EXTRACT_CONTENT_SYSTEM_PROMPT_TEMPLATE)
+        self._user_prompt = Prompt(PDF_EXTRACT_CONTENT_USER_PROMPT_TEMPLATE)
+        self._json_parser = JsonParser()
 
     def parse_paged(
         self,
@@ -153,10 +167,10 @@ class PDFParser(FileParser):
             )
 
             page = DocumentPage(
-                page_nr=pdf_page.page_number,
+                page_number=pdf_page.page_number,
                 content=result.content,
                 raw_parsed=result.raw,
-                raw_extracted=raw_extracted_text,
+                raw_extracted_text=raw_extracted_text,
                 token_usage=result.usage,
                 error=result.error,
             )
@@ -178,7 +192,7 @@ class PDFParser(FileParser):
         headings: Deque[ContentElement],
         parsed_pages: Deque[DocumentPage],
         config: DocumentParserConfig,
-    ) -> DocumentPage:
+    ) -> DocumentPage | None:
         page_image, embedded_images = self._get_images(
             page, config.image_extraction_config
         )
@@ -186,20 +200,43 @@ class PDFParser(FileParser):
         # TODO: use better parser
         raw_extracted_text = page.extract_text()
 
-        result = llm.extract(
-            image_data=img_data.read(),
+        response = self._call_llm(
+            config=config.prompt_config,
             raw_extracted_text=raw_extracted_text,
-            prompt_additions=prompt_additions,
+            headings=headings,
+            parsed_pages=parsed_pages,
+            page_image=page_image,
+            embedded_images=[
+                img.to_medium(with_caption=True) for img in embedded_images
+            ],
         )
+        if response is None:
+            return
 
-        page = DocumentPage(
-            page_nr=pdf_page.page_number,
-            content=result.content,
-            raw_parsed=result.raw,
-            raw_extracted=raw_extracted_text,
-            token_usage=result.usage,
-            error=result.error,
-        )
+        parsed_response = self._json_parser.parse(response.raw)
+        if parsed_response is None:
+            return
+
+        content_blocks = parsed_response.get("page_content_blocks")
+        if content_blocks is None:
+            return
+
+        content, error = self._get_content_list(content_blocks)
+
+        # result = llm.extract(
+        #     image_data=img_data.read(),
+        #     raw_extracted_text=raw_extracted_text,
+        #     prompt_additions=prompt_additions,
+        # )
+
+        # page = DocumentPage(
+        #     page_nr=pdf_page.page_number,
+        #     content=result.content,
+        #     raw_parsed=result.raw,
+        #     raw_extracted=raw_extracted_text,
+        #     token_usage=result.usage,
+        #     error=result.error,
+        # )
 
     def parse_hull(self, path: Path) -> ParsedDocument:
         md5_sum = get_md5_sum(path)
@@ -222,20 +259,48 @@ class PDFParser(FileParser):
     def _call_llm(
         self,
         config: PromptConfig,
-        raw_extracted: str,
+        raw_extracted_text: str,
         headings: Deque[ContentElement],
         parsed_pages: Deque[DocumentPage],
         page_image: Medium,
         embedded_images: list[Medium],
-    ) -> LlmResponse:
+    ) -> LlmResponse | None:
         prompt_addtions = PromptAdditions.create(
             config=config,
-            raw_extracted=raw_extracted,
+            raw_extracted_text=raw_extracted_text,
             previous_headings=headings,
             previous_parsed_pages=parsed_pages,
         )
 
-        self._llm.generate()
+        system_prompt = self._system_prompt.render(prompt_addtions.to_dict())
+        user_prompt = self._user_prompt.render(prompt_addtions.to_dict())
+        images = [page_image] + embedded_images
+
+        return self._llm.generate(
+            system_prompt=system_prompt,
+            user_prompt=user_prompt,
+            images=images,
+            config=LlmGenerationConfig(),
+        )
+
+    def _get_content_list(
+        self,
+        content_blocks: list[dict[str, Any]],
+    ) -> tuple[list[ContentElement], bool]:
+        error = False
+        elements = []
+        for block in content_blocks:
+            try:
+                elements.append(ContentElement(**block))
+            except Exception as e:
+                _log.error(
+                    "Raw block {0}, could not be converted to a content element: {1}",
+                    block,
+                    e,
+                )
+                error = True
+
+        return elements, error
 
     def _get_images(
         self,

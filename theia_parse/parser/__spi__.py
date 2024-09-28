@@ -21,7 +21,7 @@ class PromptConfig(BaseModel):
     custom_instructions: list[str] | None = None
     consider_last_headings_n: int = 10
     consider_last_parsed_pages_n: int = 0
-    include_raw_extracted: bool = False
+    include_raw_extracted_text: bool = False
 
 
 class DocumentParserConfig(BaseModel):
