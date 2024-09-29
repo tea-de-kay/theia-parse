@@ -7,7 +7,6 @@ from typing import Any, Deque
 import pdfplumber
 from pdfplumber.page import Page as PdfPage
 
-from theia_parse.llm import get_llm
 from theia_parse.llm.__spi__ import (
     LlmApiSettings,
     LlmGenerationConfig,
@@ -42,7 +41,7 @@ _log = LogFactory.get_logger()
 
 class PDFParser(FileParser):
     def __init__(self, llm_api_settings: LlmApiSettings) -> None:
-        self._llm = get_llm(llm_api_settings)
+        super().__init__(llm_api_settings)
         self._system_prompt = Prompt(PDF_EXTRACT_CONTENT_SYSTEM_PROMPT_TEMPLATE)
         self._user_prompt = Prompt(PDF_EXTRACT_CONTENT_USER_PROMPT_TEMPLATE)
         self._json_parser = JsonParser()
@@ -147,15 +146,15 @@ class PDFParser(FileParser):
         page_image: Medium,
         embedded_images: list[Medium],
     ) -> LlmResponse | None:
-        prompt_addtions = PromptAdditions.create(
+        prompt_additions = PromptAdditions.create(
             config=config,
             raw_extracted_text=raw_extracted_text,
             previous_headings=headings,
             previous_parsed_pages=parsed_pages,
         )
 
-        system_prompt = self._system_prompt.render(prompt_addtions.to_dict())
-        user_prompt = self._user_prompt.render(prompt_addtions.to_dict())
+        system_prompt = self._system_prompt.render(prompt_additions.to_dict())
+        user_prompt = self._user_prompt.render(prompt_additions.to_dict())
         images = [page_image] + embedded_images
 
         return self._llm.generate(
@@ -236,7 +235,7 @@ class PDFParser(FileParser):
         config: ImageExtractionConfig,
     ) -> tuple[Medium, list[EmbeddedPdfPageImage]]:
         full_page_image = Medium.create_from_image(
-            id="dummy",
+            id="",
             image_format=config.image_format,
             raw=page.to_image(resolution=config.resolution).original,
         )
