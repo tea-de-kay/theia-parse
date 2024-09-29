@@ -76,7 +76,7 @@ class DocumentPage(BaseModel):
     content: list[ContentElement]
     media: list[Medium] = []
     raw_extracted_text: str
-    raw_parsed: str
+    raw_llm_response: str
     token_usage: LlmUsage
     metadata: dict[str, Any] = {}
     error: bool = False

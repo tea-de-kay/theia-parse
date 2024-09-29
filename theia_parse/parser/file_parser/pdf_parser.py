@@ -1,4 +1,5 @@
 import hashlib
+import re
 from collections import deque
 from collections.abc import Iterable
 from functools import cached_property
@@ -44,11 +45,21 @@ _log = LogFactory.get_logger()
 
 
 class EmbeddedPdfPageImage:
-    def __init__(self, page: PdfPage, idx: int, config: ImageExtractionConfig) -> None:
+    def __init__(
+        self,
+        page: PdfPage,
+        image_spec: dict[str, Any],
+        caption_idx: int,
+        config: ImageExtractionConfig,
+    ) -> None:
         self._page = page
-        self._idx = idx
-        self._img_spec = page.images[idx]
+        self._img_spec = image_spec
         self._config = config
+        self._caption_idx = caption_idx
+
+    @property
+    def caption_idx(self) -> int:
+        return self._caption_idx
 
     @cached_property
     def raw_image(self) -> Image:
@@ -101,7 +112,7 @@ class EmbeddedPdfPageImage:
     def to_medium(self, with_caption: bool) -> Medium:
         image = self.raw_image
         if with_caption:
-            image = caption_image(image, f"image_number = {self._idx}")
+            image = caption_image(image, f"image_number = {self.caption_idx}")
 
         return Medium.create_from_image(
             id=self.id, image_format=self._config.image_format, raw=image
@@ -223,20 +234,16 @@ class PDFParser(FileParser):
 
         content, error = self._get_content_list(content_blocks)
 
-        # result = llm.extract(
-        #     image_data=img_data.read(),
-        #     raw_extracted_text=raw_extracted_text,
-        #     prompt_additions=prompt_additions,
-        # )
+        content = self._post_process_content_list(content, embedded_images)
 
-        # page = DocumentPage(
-        #     page_nr=pdf_page.page_number,
-        #     content=result.content,
-        #     raw_parsed=result.raw,
-        #     raw_extracted=raw_extracted_text,
-        #     token_usage=result.usage,
-        #     error=result.error,
-        # )
+        return DocumentPage(
+            page_number=page.page_number,
+            content=content,
+            raw_llm_response=response.raw,
+            raw_extracted_text=raw_extracted_text,
+            token_usage=response.usage,
+            error=error,
+        )
 
     def parse_hull(self, path: Path) -> ParsedDocument:
         md5_sum = get_md5_sum(path)
@@ -302,6 +309,38 @@ class PDFParser(FileParser):
 
         return elements, error
 
+    def _post_process_content_list(
+        self,
+        content: list[ContentElement],
+        embedded_images: list[EmbeddedPdfPageImage],
+    ) -> list[ContentElement]:
+        caption_to_img = {img.caption_idx: img for img in embedded_images}
+
+        processed = []
+        for element in content:
+            if element.type == "image":
+                element = self._post_process_image(element, caption_to_img)
+
+            processed.append(element)
+
+        return processed
+
+    def _post_process_image(
+        self,
+        img_element: ContentElement,
+        caption_to_img: dict[int, EmbeddedPdfPageImage],
+    ) -> ContentElement:
+        match = re.match(r"image_number=([^\s]+)\s*(.*)", img_element.content)
+        if match:
+            try:
+                caption_idx = int(match.group(1))
+                img_element.medium_id = caption_to_img[caption_idx].id
+                img_element.content = match.group(2)
+            except Exception:
+                pass
+
+        return img_element
+
     def _get_images(
         self,
         page: PdfPage,
@@ -312,8 +351,15 @@ class PDFParser(FileParser):
             image_format=config.image_format,
             raw=page.to_image(resolution=config.resolution).original,
         )
-        embedded_images = [
-            EmbeddedPdfPageImage(page, idx, config) for idx in range(len(page.images))
-        ]
+
+        embedded_images = []
+        caption_idx = 1
+        for img_spec in page.images:
+            img = EmbeddedPdfPageImage(
+                page=page, image_spec=img_spec, caption_idx=caption_idx, config=config
+            )
+            if img.is_relevant:
+                embedded_images.append(img)
+                caption_idx += 1
 
         return full_page_image, embedded_images

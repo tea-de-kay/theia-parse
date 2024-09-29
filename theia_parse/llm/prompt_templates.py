@@ -32,7 +32,7 @@ Your overall goal is to structure the full PDF page into a list of content block
 * type = 'footer': A block of text in the footer of the page
 * type = 'table-of-contents': A block containing an outline of the document, which may be spread across multiple pages
 {% if embedded_images %}
-* type = 'image': A block containing an image which is relevant for the document (no logos or design elements). The content must start with a Markdown image ![Image (IMG_NR)](/images/IMG_NR.png) where the image_number is provided by the corresponding enumerated embedded image (image_number = IMG_NR). Furthermore the content must contain a concise description of the image.
+* type = 'image': A block containing an image which is relevant for the document (no logos or design elements). The content must start with "image_number=IMG_NR" where the image_number is provided by the corresponding enumerated embedded image (image_number = IMG_NR). Furthermore the content must contain a concise description of the image.
 {% else %}
 * type = 'image': A block containing an image which is relevant for the document (no logos or design elements). The content must contain a concise description of the image.
 {% endif %}
