@@ -1,16 +1,11 @@
-import hashlib
 import re
 from collections import deque
 from collections.abc import Iterable
-from functools import cached_property
-from io import BytesIO
 from pathlib import Path
 from typing import Any, Deque
-from uuid import NAMESPACE_OID, uuid5
 
 import pdfplumber
 from pdfplumber.page import Page as PdfPage
-from PIL.Image import Image
 
 from theia_parse.llm import get_llm
 from theia_parse.llm.__spi__ import (
@@ -32,91 +27,17 @@ from theia_parse.parser.__spi__ import (
     PromptConfig,
 )
 from theia_parse.parser.file_parser.__spi__ import FileParser
+from theia_parse.parser.file_parser.pdf.embedded_pdf_page_image import (
+    EmbeddedPdfPageImage,
+)
 from theia_parse.util.files import get_md5_sum
-from theia_parse.util.image import caption_image
 from theia_parse.util.log import LogFactory
 
 
-RESOLUTION = 200
-LAST_HEADINGS_N = 10
+IMAGE_NUMBER_PATTERN = r"\s*image_number\s*=\s*(\d+)\s*(.*)"
 
 
 _log = LogFactory.get_logger()
-
-
-class EmbeddedPdfPageImage:
-    def __init__(
-        self,
-        page: PdfPage,
-        image_spec: dict[str, Any],
-        caption_idx: int,
-        config: ImageExtractionConfig,
-    ) -> None:
-        self._page = page
-        self._img_spec = image_spec
-        self._config = config
-        self._caption_idx = caption_idx
-
-    @property
-    def caption_idx(self) -> int:
-        return self._caption_idx
-
-    @cached_property
-    def raw_image(self) -> Image:
-        crop = self._page.within_bbox(self.bbox, strict=False)
-        image = crop.to_image(resolution=self._config.resolution).original
-
-        return image
-
-    @cached_property
-    def id(self) -> str:
-        digest = hashlib.md5(self.raw_image.tobytes()).digest()
-
-        return str(uuid5(NAMESPACE_OID, digest))
-
-    @property
-    def bbox(self) -> tuple[float, float, float, float]:
-        return (
-            self._img_spec["x0"],
-            self._img_spec["top"],
-            self._img_spec["x1"],
-            self._img_spec["bottom"],
-        )
-
-    @property
-    def width(self) -> float:
-        return self._img_spec["x1"] - self._img_spec["x0"]
-
-    @property
-    def height(self) -> float:
-        return self._img_spec["bottom"] - self._img_spec["top"]
-
-    @property
-    def is_relevant(self) -> bool:
-        if self._config.min_size is not None:
-            if (
-                self.width < self._config.min_size.width
-                or self.height < self._config.min_size.height
-            ):
-                return False
-
-        if self._config.max_size is not None:
-            if (
-                self.width > self._config.max_size.width
-                or self.height > self._config.max_size.height
-            ):
-                return False
-
-        return True
-
-    def to_medium(self, with_caption: bool) -> Medium:
-        image = self.raw_image
-        if with_caption:
-            image = caption_image(image, f"image_number = {self.caption_idx}")
-
-        return Medium.create_from_image(
-            id=self.id, image_format=self._config.image_format, raw=image
-        )
 
 
 class PDFParser(FileParser):
@@ -140,62 +61,13 @@ class PDFParser(FileParser):
 
         with pdfplumber.open(path) as pdf:
             for page in pdf.pages:
-                yield self._parse_page(page, headings, parsed_pages, config)
+                parsed_page = self._parse_page(page, headings, parsed_pages, config)
+                if parsed_page is not None:
+                    headings.extend(parsed_page.get_headings())
+                    parsed_pages.append(parsed_page)
+
+                yield parsed_page
                 page.close()
-
-        pages: list[DocumentPage] = []
-        for pdf_page in tqdm(
-            pdf.pages,
-            disable=not config.verbose,
-            desc="page in file",
-            leave=False,
-            ncols=80,
-        ):
-            # TODO: Every image is resized to 1024x1024 (?)
-            # Allow for multiple images per page to provide high resolution
-            img = pdf_page.to_image(resolution=RESOLUTION)
-            img_data = BytesIO()
-            img.save(img_data)
-            img_data.seek(0)
-
-            # TODO: use better parser and include extracted images
-            raw_extracted_text = pdf_page.extract_text()
-            previous_headings = [
-                h.model_dump(mode="json")
-                for headings in [p.get_headings() for p in pages]
-                for h in headings
-            ][-LAST_HEADINGS_N:]
-
-            prompt_additions.previous_headings = str(previous_headings)
-            prompt_additions.previous_structured_page_content = (
-                pages[-1].content_to_string() if pages else None
-            )
-
-            result = llm.extract(
-                image_data=img_data.read(),
-                raw_extracted_text=raw_extracted_text,
-                prompt_additions=prompt_additions,
-            )
-
-            page = DocumentPage(
-                page_number=pdf_page.page_number,
-                content=result.content,
-                raw_parsed=result.raw,
-                raw_extracted_text=raw_extracted_text,
-                token_usage=result.usage,
-                error=result.error,
-            )
-            pages.append(page)
-            pdf_page.close()
-
-        pdf.close()
-
-        return ParsedDocument(
-            path=str(path),
-            md5_sum=md5_sum,
-            content=pages,
-            metadata=metadata,
-        )
 
     def _parse_page(
         self,
@@ -234,11 +106,14 @@ class PDFParser(FileParser):
 
         content, error = self._get_content_list(content_blocks)
 
-        content = self._post_process_content_list(content, embedded_images)
+        content, media = self._post_process_content_list(
+            content, embedded_images, config
+        )
 
         return DocumentPage(
             page_number=page.page_number,
             content=content,
+            media=media,
             raw_llm_response=response.raw,
             raw_extracted_text=raw_extracted_text,
             token_usage=response.usage,
@@ -313,33 +188,47 @@ class PDFParser(FileParser):
         self,
         content: list[ContentElement],
         embedded_images: list[EmbeddedPdfPageImage],
-    ) -> list[ContentElement]:
+        config: DocumentParserConfig,
+    ) -> tuple[list[ContentElement], list[Medium]]:
         caption_to_img = {img.caption_idx: img for img in embedded_images}
 
-        processed = []
+        processed: list[ContentElement] = []
+        media: list[Medium] = []
         for element in content:
             if element.type == "image":
-                element = self._post_process_image(element, caption_to_img)
+                element, medium = self._post_process_image(
+                    element, caption_to_img, config.image_extraction_config
+                )
+                if medium is not None:
+                    media.append(medium)
 
             processed.append(element)
 
-        return processed
+        return processed, media
 
     def _post_process_image(
         self,
         img_element: ContentElement,
         caption_to_img: dict[int, EmbeddedPdfPageImage],
-    ) -> ContentElement:
-        match = re.match(r"image_number=([^\s]+)\s*(.*)", img_element.content)
+        config: ImageExtractionConfig,
+    ) -> tuple[ContentElement, Medium | None]:
+        if not config.extract_images:
+            return img_element, None
+
+        match = re.match(IMAGE_NUMBER_PATTERN, img_element.content)
+        medium = None
         if match:
             try:
                 caption_idx = int(match.group(1))
-                img_element.medium_id = caption_to_img[caption_idx].id
+                img = caption_to_img[caption_idx]
+                img_element.medium_id = img.id
                 img_element.content = match.group(2)
             except Exception:
                 pass
+            else:
+                medium = img.to_medium()
 
-        return img_element
+        return img_element, medium
 
     def _get_images(
         self,
@@ -351,6 +240,9 @@ class PDFParser(FileParser):
             image_format=config.image_format,
             raw=page.to_image(resolution=config.resolution).original,
         )
+
+        if not config.extract_images:
+            return full_page_image, []
 
         embedded_images = []
         caption_idx = 1

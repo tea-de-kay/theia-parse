@@ -1,7 +1,7 @@
 from pathlib import Path
 
 from theia_parse.parser.file_parser.__spi__ import FileParser
-from theia_parse.parser.file_parser.pdf_parser import PDFParser
+from theia_parse.parser.file_parser.pdf.pdf_parser import PDFParser
 from theia_parse.util.log import LogFactory
 
 
