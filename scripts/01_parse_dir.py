@@ -3,16 +3,21 @@ from pathlib import Path
 from dotenv import load_dotenv
 from tqdm import tqdm
 
-from theia_parse import DirectoryParser
-from theia_parse.parser.__spi__ import DirectoryParserConfig, DocumentParserConfig
+from theia_parse import (
+    DirectoryParser,
+    DirectoryParserConfig,
+    DocumentParserConfig,
+    PromptConfig,
+)
 
 
-PATH = (Path(__file__).parent.parent / "data/sample/").resolve()
+ENV_PATH = Path(__file__).parent / ".env"
+DATA_PATH = (Path(__file__).parent.parent / "data/sample/").resolve()
 
-# GPT-4 Turbo prices
-PRICE_PER_REQUEST_TOKEN = 0.01 / 1_000
-PRICE_PER_RESPONSE_TOKEN = 0.029 / 1_000
-APPROXIMATE_PRICE_PER_PAGE = 0.05
+# GPT-4o-mini Turbo price
+PRICE_PER_REQUEST_TOKEN = 0.00014 / 1_000
+PRICE_PER_RESPONSE_TOKEN = 0.0006 / 1_000
+APPROXIMATE_PRICE_PER_PAGE = 0.0055  # TODO: get better estimate
 
 
 def main():
@@ -22,23 +27,25 @@ def main():
     # AZURE_OPENAI_API_DEPLOYMENT
     # AZURE_OPENAI_API_KEY
 
-    load_dotenv()
+    load_dotenv(ENV_PATH)
 
     config = DocumentParserConfig(
         verbose=True,
         save_file=True,
-        custom_instructions=[
-            "Most pages will have a multilingual 2 column layout. Make sure to correctly separate the columns as separate content blocks per language.",  # noqa
-            "One column should be a single content block.",
-            "Do not convert layout columns to tables.",
-            "Keep mixed language headings as a single block including their numbering.",  # noqa
-        ],
+        prompt_config=PromptConfig(
+            custom_instructions=[
+                "Most pages will have a multilingual 2 column layout. Make sure to correctly separate the columns as separate content blocks per language.",  # noqa
+                "One column should be a single content block.",
+                "Do not convert layout columns to tables.",
+                "Keep mixed language headings as a single block including their numbering.",  # noqa
+            ]
+        ),
     )
     parser = DirectoryParser(
         config=DirectoryParserConfig(document_parser_config=config),
     )
 
-    pages = parser.get_number_of_pages(PATH)
+    pages = parser.get_number_of_pages(DATA_PATH)
     if pages:
         total_pages, duplicate_pages = pages
         expected_price = (total_pages - duplicate_pages) * APPROXIMATE_PRICE_PER_PAGE
@@ -52,7 +59,7 @@ def main():
 
     request_tokens = 0
     response_tokens = 0
-    for doc in parser.parse(PATH):
+    for doc in parser.parse(DATA_PATH):
         if doc is not None:
             request_tokens += doc.token_usage.request_tokens or 0
             response_tokens += doc.token_usage.response_tokens or 0

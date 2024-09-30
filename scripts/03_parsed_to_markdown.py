@@ -35,7 +35,7 @@ def content_to_markdown(content: ContentElement) -> str:
 
 
 def page_to_markdown(page: DocumentPage) -> str:
-    text = f"PAGE: {page.page_nr}\n"
+    text = f"PAGE: {page.page_number}\n"
     for content in page.content:
         text = f"{text}\n\n{content_to_markdown(content)}"
 
