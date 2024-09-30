@@ -15,7 +15,10 @@ EXTENSION_TO_PARSER: dict[str, type[FileParser]] = {
 }
 
 
-def get_parser(path: Path, llm_api_settings: LlmApiSettings) -> FileParser | None:
+def get_parser(
+    path: Path,
+    llm_api_settings: LlmApiSettings | None = None,
+) -> FileParser | None:
     parser_cls = EXTENSION_TO_PARSER.get(path.suffix.strip(".").lower())
     if parser_cls is None:
         _log.warning("Filetype not supported [path='{0}']", path)

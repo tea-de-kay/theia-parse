@@ -46,6 +46,14 @@ class PDFParser(FileParser):
         self._user_prompt = Prompt(PDF_EXTRACT_CONTENT_USER_PROMPT_TEMPLATE)
         self._json_parser = JsonParser()
 
+    def parse(self, path: Path, config: DocumentParserConfig) -> ParsedDocument:
+        doc = self.parse_hull(path)
+        doc.content = [
+            page for page in self.parse_paged(path, config) if page is not None
+        ]
+
+        return doc
+
     def parse_paged(
         self,
         path: Path,
