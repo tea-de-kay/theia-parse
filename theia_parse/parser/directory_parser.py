@@ -5,8 +5,7 @@ from typing import Generator
 from tqdm import tqdm
 
 from theia_parse.const import DUPLICATE_SUFFIXES
-from theia_parse.llm.__spi__ import LLM, LlmApiEnvSettings
-from theia_parse.llm.openai.azure_openai_llm import AzureOpenAiLLM
+from theia_parse.llm.__spi__ import LlmApiEnvSettings, LlmApiSettings
 from theia_parse.model import ParsedDocument
 from theia_parse.parser.__spi__ import DirectoryParserConfig
 from theia_parse.parser.document_parser import DocumentParser
@@ -17,21 +16,22 @@ from theia_parse.util.log import LogFactory
 DEFAULT_DIRECTORY_PARSER_CONFIG = DirectoryParserConfig()
 
 
-class DirectoryParser:
-    _log = LogFactory.get_logger()
+_log = LogFactory.get_logger()
 
+
+class DirectoryParser:
     def __init__(
         self,
-        llm: LLM | None = None,
+        llm_api_settings: LlmApiSettings | None = None,
         config: DirectoryParserConfig = DEFAULT_DIRECTORY_PARSER_CONFIG,
     ) -> None:
-        if llm is None:
-            self._llm = AzureOpenAiLLM(config=LlmApiEnvSettings())
-        else:
-            self._llm = llm
-
+        if llm_api_settings is None:
+            self._llm_api_settings = LlmApiEnvSettings().to_settings()
+        self._llm_api_settings = llm_api_settings
         self._config = config
-        self._document_parser = DocumentParser(self._llm, config.document_parser_config)
+        self._document_parser = DocumentParser(
+            llm_api_settings, config.document_parser_config
+        )
 
     def parse(
         self,
@@ -41,7 +41,7 @@ class DirectoryParser:
         directory = Path(directory)
 
         if not directory.is_dir():
-            self._log.warning("Not a directory [path='{0}']", directory)
+            _log.warning("Not a directory [path='{0}']", directory)
             return
 
         hash_to_path: dict[str, Path] = {}
@@ -49,7 +49,7 @@ class DirectoryParser:
             hash_to_path = {k: Path(v) for k, v in existing_hash_to_path.items()}
 
         for root, _, file_names in os.walk(directory):
-            self._log.info("Working on directory [dir_name='{0}']", root)
+            _log.info("Working on directory [dir_name='{0}']", root)
             file_name_iterator = tqdm(
                 sorted(f for f in file_names if is_file_supported(f)),
                 desc="file in dir",
@@ -58,12 +58,12 @@ class DirectoryParser:
             )
             for file_name in file_name_iterator:
                 current_path = Path(root) / file_name
-                self._log.info("Working on file [path='{0}']", current_path)
+                _log.info("Working on file [path='{0}']", current_path)
                 md5_sum = get_md5_sum(current_path)
                 if self._config.deduplicate_docs and (
                     existing_path := hash_to_path.get(md5_sum)
                 ):
-                    self._log.info(
+                    _log.info(
                         "Skipping file due to deduplication "
                         "[path='{0}', duplicate_path='{1}']",
                         current_path,
@@ -90,7 +90,7 @@ class DirectoryParser:
         directory = Path(directory)
 
         if not directory.is_dir():
-            self._log.warning("Not a directory [path='{0}']", directory)
+            _log.warning("Not a directory [path='{0}']", directory)
             return 0, 0
 
         hash_to_path: dict[str, Path] = {}

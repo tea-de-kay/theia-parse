@@ -19,7 +19,6 @@ class DocumentParser:
     ) -> None:
         if llm_api_settings is None:
             llm_api_settings = LlmApiEnvSettings().to_settings()
-
         self._llm_api_settings = llm_api_settings
         self._config = config
 
@@ -31,10 +30,12 @@ class DocumentParser:
             return
 
         parsed = parser.parse(path, self._config)
-        if parsed is not None:
-            if self._config.save_file:
-                save_path = with_suffix(path, PARSED_JSON_SUFFIXES)
-                write_json(save_path, parsed)
+        if parsed is None:
+            return
+
+        if self._config.save_file:
+            save_path = with_suffix(path, PARSED_JSON_SUFFIXES)
+            write_json(save_path, parsed)
 
         return parsed
 

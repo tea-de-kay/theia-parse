@@ -26,7 +26,7 @@ class PromptConfig(BaseModel):
 
 class DocumentParserConfig(BaseModel):
     verbose: bool = True
-    save_file: bool = True
+    save_file: bool = False
     prompt_config: PromptConfig = PromptConfig()
     image_extraction_config: ImageExtractionConfig = ImageExtractionConfig()
 
