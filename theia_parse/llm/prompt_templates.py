@@ -88,6 +88,7 @@ PDF_EXTRACT_CONTENT_USER_PROMPT_TEMPLATE = """
 <raw_extracted_text>
 {{ raw_extracted_text }}
 </raw_extracted_text>
+{% endif %}
 
 Use all provided information to create the JSON object of the page content.
 """  # noqa

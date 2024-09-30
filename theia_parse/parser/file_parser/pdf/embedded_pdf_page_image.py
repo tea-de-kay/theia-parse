@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import hashlib
 from functools import cached_property
 from typing import Any
@@ -60,21 +62,34 @@ class EmbeddedPdfPageImage:
 
     @property
     def is_relevant(self) -> bool:
-        if self._config.min_size is not None:
-            if (
-                self.width < self._config.min_size.width
-                or self.height < self._config.min_size.height
-            ):
-                return False
+        if self._config.min_size is not None and self._config.min_size.is_larger_than(
+            width=self.width,
+            height=self.height,
+            total_width=self._page.width,
+            total_height=self._page.height,
+        ):
+            return False
 
-        if self._config.max_size is not None:
-            if (
-                self.width > self._config.max_size.width
-                or self.height > self._config.max_size.height
-            ):
-                return False
+        if self._config.max_size is not None and self._config.max_size.is_smaller_than(
+            width=self.width,
+            height=self.height,
+            total_width=self._page.width,
+            total_height=self._page.height,
+        ):
+            return False
 
         return True
+
+    def is_contained(self, image: EmbeddedPdfPageImage) -> bool:
+        image_x0, image_top, image_x1, image_bottom = image.bbox
+        self_x0, self_top, self_x1, self_bottom = self.bbox
+
+        return (
+            image_x0 >= self_x0
+            and image_top >= self_top
+            and image_x1 <= self_x1
+            and image_bottom <= self_bottom
+        )
 
     def to_medium(self, with_caption: bool = False) -> Medium:
         image = self.raw_image

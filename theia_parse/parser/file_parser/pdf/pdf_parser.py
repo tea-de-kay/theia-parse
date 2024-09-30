@@ -251,7 +251,7 @@ class PDFParser(FileParser):
         if not config.extract_images:
             return full_page_image, []
 
-        embedded_images = []
+        embedded_images: list[EmbeddedPdfPageImage] = []
         caption_idx = 1
         for img_spec in page.images:
             img = EmbeddedPdfPageImage(
@@ -260,5 +260,12 @@ class PDFParser(FileParser):
             if img.is_relevant:
                 embedded_images.append(img)
                 caption_idx += 1
+
+        if config.exclude_fully_contained:
+            embedded_images = [
+                ei
+                for ei in embedded_images
+                if not any(ei.is_contained(check) for check in embedded_images)
+            ]
 
         return full_page_image, embedded_images

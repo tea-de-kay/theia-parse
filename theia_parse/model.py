@@ -65,7 +65,7 @@ class Medium(BaseModel):
     @staticmethod
     def create_from_image(id: str, image_format: ImageFormat, raw: Image) -> Medium:
         data = image_to_bytes(raw, image_format)
-        mime_type = f"image/{format}"
+        mime_type = f"image/{image_format}"
         return Medium(
             id=id, mime_type=mime_type, content_b64=b64encode(data).decode("utf-8")
         )
