@@ -5,7 +5,7 @@ from enum import StrEnum
 from typing import Any
 
 from PIL.Image import Image
-from pydantic import BaseModel
+from pydantic import BaseModel, computed_field
 
 from theia_parse.types import ImageFormat
 from theia_parse.util.image import image_to_bytes
@@ -98,6 +98,7 @@ class ParsedDocument(BaseModel):
     content: list[DocumentPage]
     metadata: dict[str, Any] = {}
 
+    @computed_field
     @property
     def token_usage(self) -> LlmUsage:
         request_tokens = 0

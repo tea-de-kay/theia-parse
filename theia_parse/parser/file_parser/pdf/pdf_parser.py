@@ -39,7 +39,7 @@ IMAGE_NUMBER_PATTERN = r"\s*image_number\s*=\s*(\d+)\s*(.*)"
 _log = LogFactory.get_logger()
 
 
-class PDFParser(FileParser):
+class PdfParser(FileParser):
     def __init__(self, llm_api_settings: LlmApiSettings) -> None:
         super().__init__(llm_api_settings)
         self._system_prompt = Prompt(PDF_EXTRACT_CONTENT_SYSTEM_PROMPT_TEMPLATE)
@@ -159,6 +159,7 @@ class PDFParser(FileParser):
             raw_extracted_text=raw_extracted_text,
             previous_headings=headings,
             previous_parsed_pages=parsed_pages,
+            embedded_images=embedded_images,
         )
 
         system_prompt = self._system_prompt.render(prompt_additions.to_dict())
@@ -262,10 +263,11 @@ class PDFParser(FileParser):
                 caption_idx += 1
 
         if config.exclude_fully_contained:
-            embedded_images = [
-                ei
-                for ei in embedded_images
-                if not any(ei.is_contained(check) for check in embedded_images)
-            ]
+            filtered = []
+            for ei in embedded_images:
+                checks = [check for check in embedded_images if check is not ei]
+                if not any(ei.is_contained(check) for check in checks):
+                    filtered.append(ei)
+            embedded_images = filtered
 
         return full_page_image, embedded_images

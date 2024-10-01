@@ -2,7 +2,7 @@ from pathlib import Path
 
 from theia_parse.llm.__spi__ import LlmApiSettings
 from theia_parse.parser.file_parser.__spi__ import FileParser
-from theia_parse.parser.file_parser.pdf.pdf_parser import PDFParser
+from theia_parse.parser.file_parser.pdf.pdf_parser import PdfParser
 from theia_parse.util.log import LogFactory
 
 
@@ -11,7 +11,7 @@ _log = LogFactory.get_logger()
 
 # TODO: Add more file types (or wrapper filetype -> pdf)
 EXTENSION_TO_PARSER: dict[str, type[FileParser]] = {
-    "pdf": PDFParser,
+    "pdf": PdfParser,
 }
 
 

@@ -84,49 +84,6 @@ class AzureOpenAiLLM(LLM):
             ),
         )
 
-    # def extract(
-    #     self,
-    #     image_data: bytes | None,
-    #     raw_extracted_text: str | None,
-    #     prompt_additions: PromptAdditions,
-    # ) -> LlExtractionResult:
-    #     prompt_data = {
-    #         **prompt_additions.model_dump(),
-    #         "raw_extracted_text": raw_extracted_text,
-    #     }
-
-    #     messages = self._assemble_messages(prompt_data, image_data)
-
-    #     response = self.generate(
-    #         messages,
-    #         LlmGenerationConfig(temperature=0, max_tokens=4096, json_mode=True),
-    #     )
-
-    #     if response is None:
-    #         return LlExtractionResult(raw="", error=True)
-
-    #     page_data = self._json_parser.parse(response.raw)
-    #     error = False
-    #     content = []
-    #     if page_data is None:
-    #         error = True
-    #     else:
-    #         for element in page_data.get("page_content", []):
-    #             try:
-    #                 content.append(ContentElement(**element))
-    #             except Exception:
-    #                 self._log.error(
-    #                     "Could not create content element [raw='{0}']", element
-    #                 )
-    #                 error = True
-
-    #     return LlExtractionResult(
-    #         raw=response.raw,
-    #         content=content,
-    #         usage=response.usage,
-    #         error=error,
-    #     )
-
     def _assemble_image_url(self, image: Medium) -> dict[str, str | dict[str, str]]:
         return {
             "type": "image_url",

@@ -26,7 +26,7 @@ You are provided with:
 
 Your overall goal is to structure the full PDF page into a list of content blocks, indicating the type and content:
 
-* type = 'heading-level-i': A heading of level i (= 1, 2, 3, ...), consistently formatted throughout the document. The content should include both the text of the heading and any associated numbering.
+* type = 'heading-level-i': A heading of level i (= 1, 2, ... 10), consistently formatted throughout the document. The content should include both the text of the heading and any associated numbering.
 * type = 'text': A plain block of text, using Markdown formatting
 * type = 'table': A table formatted as Markdown
 * type = 'footer': A block of text in the footer of the page
@@ -44,7 +44,7 @@ Output a single JSON object, following this schema:
 {
   'page_content_blocks': [
     {
-      'type': 'heading-level-i | text | table | footer | table-of-contents | image',
+      'type': 'heading-level-i (i = 1, 2, ... 10) | text | table | footer | table-of-contents | image',
       'content': 'the content as text following the instructions'
     },
     ...
