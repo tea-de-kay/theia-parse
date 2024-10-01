@@ -26,15 +26,15 @@ You are provided with:
 
 Your overall goal is to structure the full PDF page into a list of content blocks, indicating the type and content:
 
-* type = 'heading-level-i': A heading of level i (= 1, 2, ... 10), consistently formatted throughout the document. The content should include both the text of the heading and any associated numbering.
+* type = 'heading': A heading of a certain level, consistently formatted throughout the document. The content should include both the text of the heading and any associated numbering. The heading_level should be an integer indicating the level of the heading. The highest level is 1.
 * type = 'text': A plain block of text, using Markdown formatting
 * type = 'table': A table formatted as Markdown
 * type = 'footer': A block of text in the footer of the page
 * type = 'table-of-contents': A block containing an outline of the document, which may be spread across multiple pages
 {% if embedded_images %}
-* type = 'image': A block containing an image which is relevant for the document (no logos or design elements). The content must start with "image_number=IMG_NR" where the image_number is provided by the corresponding enumerated embedded image (image_number = IMG_NR). Furthermore the content must contain a concise description of the image.
+* type = 'image': A block containing an image which is relevant for the document (no logos or design elements). The content must contain a concise description of the image. If the image is a diagram, a detailed description must be provided. The image_number must contain the number from the caption provided by the corresponding enumerated embedded image.
 {% else %}
-* type = 'image': A block containing an image which is relevant for the document (no logos or design elements). The content must contain a concise description of the image.
+* type = 'image':  A block containing an image which is relevant for the document (no logos or design elements). The content must contain a concise description of the image. If the image is a diagram, a detailed description must be provided.
 {% endif %}
 
 Your task is to use everything provided to you to identify the page layout and content and extract the individual content blocks in proper reading order.
@@ -44,8 +44,10 @@ Output a single JSON object, following this schema:
 {
   'page_content_blocks': [
     {
-      'type': 'heading-level-i (i = 1, 2, ... 10) | text | table | footer | table-of-contents | image',
-      'content': 'the content as text following the instructions'
+      'type': 'heading | text | table | footer | table-of-contents | image',
+      'content': 'the content as text following the task and instructions',
+      'heading_level': null | 1, 2, ...,
+      'image_number': null | 1, 2, ...
     },
     ...
   ]

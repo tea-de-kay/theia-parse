@@ -18,16 +18,7 @@ class LlmUsage(BaseModel):
 
 
 class ContentType(StrEnum):
-    HEADING_1 = "heading-level-1"
-    HEADING_2 = "heading-level-2"
-    HEADING_3 = "heading-level-3"
-    HEADING_4 = "heading-level-4"
-    HEADING_5 = "heading-level-5"
-    HEADING_6 = "heading-level-6"
-    HEADING_7 = "heading-level-7"
-    HEADING_8 = "heading-level-8"
-    HEADING_9 = "heading-level-9"
-    HEADING_10 = "heading-level-10"
+    HEADING = "heading"
     TEXT = "text"
     FOOTER = "footer"
     TABLE = "table"
@@ -35,26 +26,43 @@ class ContentType(StrEnum):
     IMAGE = "image"
 
 
+class RawContentElement(BaseModel):
+    type: ContentType
+    content: str
+    heading_level: int | None = None
+    image_number: int | None = None
+
+    def to_element(self, img_nr_to_id: dict[int, str] | None = None) -> ContentElement:
+        if self.type == ContentType.HEADING:
+            assert self.heading_level is not None
+            return HeadingElement(
+                content=self.content, heading_level=self.heading_level
+            )
+
+        if self.type == ContentType.IMAGE:
+            medium_id = None
+            if img_nr_to_id is not None:
+                assert self.image_number is not None
+                medium_id = img_nr_to_id[self.image_number]
+
+            return ImageElement(content=self.content, medium_id=medium_id)
+
+        return ContentElement(type=self.type, content=self.content)
+
+
 class ContentElement(BaseModel):
     type: ContentType
     content: str
-    medium_id: str | None = None
 
-    @property
-    def is_heading(self) -> bool:
-        return self.type.value.startswith("heading")
 
-    @property
-    def heading_level(self) -> int:
-        if not self.is_heading:
-            return 0
-        else:
-            try:
-                level = int(self.type.value.split("-")[-1])
-            except Exception:
-                level = 0
+class HeadingElement(ContentElement):
+    type: ContentType = ContentType.HEADING
+    heading_level: int
 
-            return level
+
+class ImageElement(ContentElement):
+    type: ContentType = ContentType.IMAGE
+    medium_id: str | None
 
 
 class Medium(BaseModel):
@@ -89,7 +97,7 @@ class DocumentPage(BaseModel):
             return ""
 
     def get_headings(self) -> list[ContentElement]:
-        return [e for e in self.content if e.is_heading]
+        return [e for e in self.content if e.type == ContentType.HEADING]
 
 
 class ParsedDocument(BaseModel):
