@@ -69,19 +69,28 @@ class Medium(BaseModel):
     id: str
     mime_type: str
     content_b64: str
+    description: str | None = None
 
     @staticmethod
-    def create_from_image(id: str, image_format: ImageFormat, raw: Image) -> Medium:
+    def create_from_image(
+        id: str,
+        image_format: ImageFormat,
+        raw: Image,
+        description: str | None = None,
+    ) -> Medium:
         data = image_to_bytes(raw, image_format)
         mime_type = f"image/{image_format}"
         return Medium(
-            id=id, mime_type=mime_type, content_b64=b64encode(data).decode("utf-8")
+            id=id,
+            mime_type=mime_type,
+            content_b64=b64encode(data).decode("utf-8"),
+            description=description,
         )
 
 
 class DocumentPage(BaseModel):
     page_number: int
-    content: list[ContentElement]
+    content: list[ContentElement | HeadingElement | ImageElement]
     media: list[Medium] = []
     raw_extracted_text: str
     raw_llm_response: str

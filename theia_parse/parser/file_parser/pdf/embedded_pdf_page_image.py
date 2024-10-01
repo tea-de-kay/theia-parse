@@ -105,11 +105,18 @@ class EmbeddedPdfPageImage:
 
         return False
 
-    def to_medium(self, with_caption: bool = False) -> Medium:
+    def to_medium(
+        self,
+        with_caption: bool = False,
+        description: str | None = None,
+    ) -> Medium:
         image = self.raw_image
         if with_caption:
             image = caption_image(image, f"image_number = {self.caption_idx}")
 
         return Medium.create_from_image(
-            id=self.id, image_format=self._config.image_format, raw=image
+            id=self.id,
+            image_format=self._config.image_format,
+            raw=image,
+            description=description,
         )

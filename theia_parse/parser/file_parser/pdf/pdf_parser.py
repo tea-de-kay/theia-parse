@@ -213,7 +213,7 @@ class PdfParser(FileParser):
                 if element.medium_id is not None:
                     img = id_to_img.get(element.medium_id)
                     if img is not None:
-                        media.append(img.to_medium())
+                        media.append(img.to_medium(description=element.content))
 
         return media
 

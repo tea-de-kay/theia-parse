@@ -37,9 +37,9 @@ Your overall goal is to structure the full PDF page into a list of content block
 * type = 'table-of-contents': A block containing an outline of the document, which may be spread across multiple pages. The content should include a simplified representation of the outline.
 
 {% if embedded_images %}
-* type = 'image': A block containing an image which is relevant for the document (no logos or design elements). The content must contain a concise description of the image. If the image is a diagram, a detailed description must be provided. The image_number must contain the number from the caption provided by the corresponding enumerated embedded image.
+* type = 'image': A block containing an image which is relevant for the document (no logos, design or background elements). The content must contain a concise description of the image. If the image is a diagram, a detailed description must be provided. The image_number must contain the number from the caption provided by the corresponding enumerated embedded image.
 {% else %}
-* type = 'image':  A block containing an image which is relevant for the document (no logos or design elements). The content must contain a concise description of the image. If the image is a diagram, a detailed description must be provided.
+* type = 'image':  A block containing an image which is relevant for the document (no logos, design or background elements). The content must contain a concise description of the image. If the image is a diagram, a detailed description must be provided.
 {% endif %}
 
 Your task is to use everything provided to you to identify the page layout and content and extract the individual content blocks in proper reading order.
