@@ -1,4 +1,6 @@
 from theia_parse.const import SUPPORTED_EXTENSIONS
+from theia_parse.formatter.__spi__ import Formatter
+from theia_parse.formatter.markdown_formatter import MarkdownFormatter
 from theia_parse.llm.__spi__ import LlmApiSettings
 from theia_parse.parser.__spi__ import (
     DirectoryParserConfig,
@@ -15,6 +17,8 @@ __all__ = [
     "DocumentParserConfig",
     "DirectoryParser",
     "DirectoryParserConfig",
+    "Formatter",
+    "MarkdownFormatter",
     "LlmApiSettings",
     "ImageExtractionConfig",
     "PromptConfig",
