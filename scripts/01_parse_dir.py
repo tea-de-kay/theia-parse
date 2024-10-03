@@ -14,7 +14,7 @@ from theia_parse import (
 ENV_PATH = Path(__file__).parent / ".env"
 DATA_PATH = (Path(__file__).parent.parent / "data/sample/").resolve()
 
-# GPT-4o-mini Turbo price
+# GPT-4o-mini price
 PRICE_PER_REQUEST_TOKEN = 0.00014 / 1_000
 PRICE_PER_RESPONSE_TOKEN = 0.0006 / 1_000
 APPROXIMATE_PRICE_PER_PAGE = 0.0055  # TODO: get better estimate
