@@ -62,7 +62,6 @@ Output a single JSON object, following this schema:
 # Instructions
 
 * Include all text provided to you.
-* Make the content blocks as large and consistent as possible.
 {% if custom_instructions %}
 {% for instruction in custom_instructions %}
 * {{ instruction }}
