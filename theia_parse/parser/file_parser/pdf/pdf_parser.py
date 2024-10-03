@@ -1,4 +1,3 @@
-import re
 from collections import deque
 from collections.abc import Iterable
 from pathlib import Path
@@ -19,7 +18,14 @@ from theia_parse.llm.prompt_templates import (
     PDF_EXTRACT_CONTENT_USER_PROMPT_TEMPLATE,
 )
 from theia_parse.llm.response_parser.json_parser import JsonParser
-from theia_parse.model import ContentElement, DocumentPage, Medium, ParsedDocument
+from theia_parse.model import (
+    ContentElement,
+    DocumentPage,
+    ImageElement,
+    Medium,
+    ParsedDocument,
+    RawContentElement,
+)
 from theia_parse.parser.__spi__ import (
     DocumentParserConfig,
     ImageExtractionConfig,
@@ -39,7 +45,7 @@ IMAGE_NUMBER_PATTERN = r"\s*image_number\s*=\s*(\d+)\s*(.*)"
 _log = LogFactory.get_logger()
 
 
-class PDFParser(FileParser):
+class PdfParser(FileParser):
     def __init__(self, llm_api_settings: LlmApiSettings) -> None:
         super().__init__(llm_api_settings)
         self._system_prompt = Prompt(PDF_EXTRACT_CONTENT_SYSTEM_PROMPT_TEMPLATE)
@@ -111,11 +117,9 @@ class PDFParser(FileParser):
         if content_blocks is None:
             return
 
-        content, error = self._get_content_list(content_blocks)
+        content, error = self._get_content_list(content_blocks, embedded_images)
 
-        content, media = self._post_process_content_list(
-            content, embedded_images, config
-        )
+        content, media = self._post_process(content, embedded_images)
 
         return DocumentPage(
             page_number=page.page_number,
@@ -159,6 +163,7 @@ class PDFParser(FileParser):
             raw_extracted_text=raw_extracted_text,
             previous_headings=headings,
             previous_parsed_pages=parsed_pages,
+            embedded_images=embedded_images,
         )
 
         system_prompt = self._system_prompt.render(prompt_additions.to_dict())
@@ -174,13 +179,16 @@ class PDFParser(FileParser):
 
     def _get_content_list(
         self,
-        content_blocks: list[dict[str, Any]],
+        raw_blocks: list[dict[str, Any]],
+        embedded_images: list[EmbeddedPdfPageImage],
     ) -> tuple[list[ContentElement], bool]:
+        img_nr_to_id = {img.caption_idx: img.id for img in embedded_images}
         error = False
-        elements = []
-        for block in content_blocks:
+        elements: list[ContentElement] = []
+        for block in raw_blocks:
             try:
-                elements.append(ContentElement(**block))
+                raw = RawContentElement(**block)
+                elements.append(raw.to_element(img_nr_to_id))
             except Exception as e:
                 _log.error(
                     "Raw block {0}, could not be converted to a content element: {1}",
@@ -191,51 +199,23 @@ class PDFParser(FileParser):
 
         return elements, error
 
-    def _post_process_content_list(
+    def _post_process(
         self,
         content: list[ContentElement],
         embedded_images: list[EmbeddedPdfPageImage],
-        config: DocumentParserConfig,
     ) -> tuple[list[ContentElement], list[Medium]]:
-        caption_to_img = {img.caption_idx: img for img in embedded_images}
-
-        processed: list[ContentElement] = []
+        id_to_img = {img.id: img for img in embedded_images}
         media: list[Medium] = []
         for element in content:
-            if element.type == "image":
-                element, medium = self._post_process_image(
-                    element, caption_to_img, config.image_extraction_config
-                )
-                if medium is not None:
-                    media.append(medium)
+            if isinstance(element, ImageElement):
+                if element.medium_id is not None:
+                    img = id_to_img.get(element.medium_id)
+                    if img is not None:
+                        media.append(img.to_medium(description=element.content))
+                    else:
+                        element.medium_id = None
 
-            processed.append(element)
-
-        return processed, media
-
-    def _post_process_image(
-        self,
-        img_element: ContentElement,
-        caption_to_img: dict[int, EmbeddedPdfPageImage],
-        config: ImageExtractionConfig,
-    ) -> tuple[ContentElement, Medium | None]:
-        if not config.extract_images:
-            return img_element, None
-
-        match = re.match(IMAGE_NUMBER_PATTERN, img_element.content)
-        medium = None
-        if match:
-            try:
-                caption_idx = int(match.group(1))
-                img = caption_to_img[caption_idx]
-                img_element.medium_id = img.id
-                img_element.content = match.group(2)
-            except Exception:
-                pass
-            else:
-                medium = img.to_medium()
-
-        return img_element, medium
+        return content, media
 
     def _get_images(
         self,
@@ -262,10 +242,11 @@ class PDFParser(FileParser):
                 caption_idx += 1
 
         if config.exclude_fully_contained:
-            embedded_images = [
-                ei
-                for ei in embedded_images
-                if not any(ei.is_contained(check) for check in embedded_images)
-            ]
+            filtered = []
+            for ei in embedded_images:
+                checks = [check for check in embedded_images if check is not ei]
+                if not any(ei.is_contained(check) for check in checks):
+                    filtered.append(ei)
+            embedded_images = filtered
 
         return full_page_image, embedded_images

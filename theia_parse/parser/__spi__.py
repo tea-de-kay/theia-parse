@@ -17,24 +17,6 @@ class ImageSize(BaseModel):
     width: T_num
     height: T_num
 
-    def is_smaller_than(
-        self, width: T_num, height: T_num, total_width: T_num, total_height: T_num
-    ) -> bool:
-        min_size = self.to_absolute(total_width=total_width, total_height=total_height)
-        if width > min_size.width and height > min_size.height:
-            return True
-
-        return False
-
-    def is_larger_than(
-        self, width: T_num, height: T_num, total_width: T_num, total_height: T_num
-    ) -> bool:
-        max_size = self.to_absolute(total_width=total_width, total_height=total_height)
-        if width < max_size.width and height < max_size.height:
-            return True
-
-        return False
-
     def to_absolute(self, total_width: T_num, total_height: T_num) -> ImageSize:
         width = self.width
         if isinstance(self.width, float):

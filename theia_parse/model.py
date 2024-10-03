@@ -5,7 +5,7 @@ from enum import StrEnum
 from typing import Any
 
 from PIL.Image import Image
-from pydantic import BaseModel
+from pydantic import BaseModel, computed_field
 
 from theia_parse.types import ImageFormat
 from theia_parse.util.image import image_to_bytes
@@ -18,16 +18,7 @@ class LlmUsage(BaseModel):
 
 
 class ContentType(StrEnum):
-    HEADING_1 = "heading-level-1"
-    HEADING_2 = "heading-level-2"
-    HEADING_3 = "heading-level-3"
-    HEADING_4 = "heading-level-4"
-    HEADING_5 = "heading-level-5"
-    HEADING_6 = "heading-level-6"
-    HEADING_7 = "heading-level-7"
-    HEADING_8 = "heading-level-8"
-    HEADING_9 = "heading-level-9"
-    HEADING_10 = "heading-level-10"
+    HEADING = "heading"
     TEXT = "text"
     FOOTER = "footer"
     TABLE = "table"
@@ -35,45 +26,71 @@ class ContentType(StrEnum):
     IMAGE = "image"
 
 
+class RawContentElement(BaseModel):
+    type: ContentType
+    content: str
+    heading_level: int | None = None
+    image_number: int | None = None
+
+    def to_element(self, img_nr_to_id: dict[int, str] | None = None) -> ContentElement:
+        if self.type == ContentType.HEADING:
+            assert self.heading_level is not None
+            return HeadingElement(
+                content=self.content, heading_level=self.heading_level
+            )
+
+        if self.type == ContentType.IMAGE:
+            medium_id = None
+            if img_nr_to_id is not None:
+                assert self.image_number is not None
+                medium_id = img_nr_to_id[self.image_number]
+
+            return ImageElement(content=self.content, medium_id=medium_id)
+
+        return ContentElement(type=self.type, content=self.content)
+
+
 class ContentElement(BaseModel):
     type: ContentType
     content: str
-    medium_id: str | None = None
 
-    @property
-    def is_heading(self) -> bool:
-        return self.type.value.startswith("heading")
 
-    @property
-    def heading_level(self) -> int:
-        if not self.is_heading:
-            return 0
-        else:
-            try:
-                level = int(self.type.value.split("-")[-1])
-            except Exception:
-                level = 0
+class HeadingElement(ContentElement):
+    type: ContentType = ContentType.HEADING
+    heading_level: int
 
-            return level
+
+class ImageElement(ContentElement):
+    type: ContentType = ContentType.IMAGE
+    medium_id: str | None
 
 
 class Medium(BaseModel):
     id: str
     mime_type: str
     content_b64: str
+    description: str | None = None
 
     @staticmethod
-    def create_from_image(id: str, image_format: ImageFormat, raw: Image) -> Medium:
+    def create_from_image(
+        id: str,
+        image_format: ImageFormat,
+        raw: Image,
+        description: str | None = None,
+    ) -> Medium:
         data = image_to_bytes(raw, image_format)
         mime_type = f"image/{image_format}"
         return Medium(
-            id=id, mime_type=mime_type, content_b64=b64encode(data).decode("utf-8")
+            id=id,
+            mime_type=mime_type,
+            content_b64=b64encode(data).decode("utf-8"),
+            description=description,
         )
 
 
 class DocumentPage(BaseModel):
     page_number: int
-    content: list[ContentElement]
+    content: list[ContentElement | HeadingElement | ImageElement]
     media: list[Medium] = []
     raw_extracted_text: str
     raw_llm_response: str
@@ -89,7 +106,7 @@ class DocumentPage(BaseModel):
             return ""
 
     def get_headings(self) -> list[ContentElement]:
-        return [e for e in self.content if e.is_heading]
+        return [e for e in self.content if e.type == ContentType.HEADING]
 
 
 class ParsedDocument(BaseModel):
@@ -98,6 +115,7 @@ class ParsedDocument(BaseModel):
     content: list[DocumentPage]
     metadata: dict[str, Any] = {}
 
+    @computed_field
     @property
     def token_usage(self) -> LlmUsage:
         request_tokens = 0
