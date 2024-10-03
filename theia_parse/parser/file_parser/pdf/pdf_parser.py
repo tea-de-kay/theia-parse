@@ -1,4 +1,3 @@
-import re
 from collections import deque
 from collections.abc import Iterable
 from pathlib import Path
@@ -21,7 +20,6 @@ from theia_parse.llm.prompt_templates import (
 from theia_parse.llm.response_parser.json_parser import JsonParser
 from theia_parse.model import (
     ContentElement,
-    ContentType,
     DocumentPage,
     ImageElement,
     Medium,
@@ -121,7 +119,7 @@ class PdfParser(FileParser):
 
         content, error = self._get_content_list(content_blocks, embedded_images)
 
-        media = self._get_media(content, embedded_images)
+        content, media = self._post_process(content, embedded_images)
 
         return DocumentPage(
             page_number=page.page_number,
@@ -201,11 +199,11 @@ class PdfParser(FileParser):
 
         return elements, error
 
-    def _get_media(
+    def _post_process(
         self,
         content: list[ContentElement],
         embedded_images: list[EmbeddedPdfPageImage],
-    ) -> list[Medium]:
+    ) -> tuple[list[ContentElement], list[Medium]]:
         id_to_img = {img.id: img for img in embedded_images}
         media: list[Medium] = []
         for element in content:
@@ -214,8 +212,10 @@ class PdfParser(FileParser):
                     img = id_to_img.get(element.medium_id)
                     if img is not None:
                         media.append(img.to_medium(description=element.content))
+                    else:
+                        element.medium_id = None
 
-        return media
+        return content, media
 
     def _get_images(
         self,
