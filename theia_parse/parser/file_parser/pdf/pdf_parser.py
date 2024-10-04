@@ -21,6 +21,7 @@ from theia_parse.llm.response_parser.json_parser import JsonParser
 from theia_parse.model import (
     ContentElement,
     DocumentPage,
+    HeadingElement,
     ImageElement,
     Medium,
     ParsedDocument,
@@ -65,7 +66,7 @@ class PdfParser(FileParser):
         path: Path,
         config: DocumentParserConfig,
     ) -> Iterable[DocumentPage | None]:
-        headings: Deque[ContentElement] = deque(
+        headings: Deque[HeadingElement] = deque(
             maxlen=config.prompt_config.consider_last_headings_n
         )
         parsed_pages: Deque[DocumentPage] = deque(
@@ -85,7 +86,7 @@ class PdfParser(FileParser):
     def _parse_page(
         self,
         page: PdfPage,
-        headings: Deque[ContentElement],
+        headings: Deque[HeadingElement],
         parsed_pages: Deque[DocumentPage],
         config: DocumentParserConfig,
     ) -> DocumentPage | None:
@@ -153,7 +154,7 @@ class PdfParser(FileParser):
         self,
         config: PromptConfig,
         raw_extracted_text: str,
-        headings: Deque[ContentElement],
+        headings: Deque[HeadingElement],
         parsed_pages: Deque[DocumentPage],
         page_image: Medium,
         embedded_images: list[Medium],

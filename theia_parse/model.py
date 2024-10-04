@@ -105,8 +105,8 @@ class DocumentPage(BaseModel):
         else:
             return ""
 
-    def get_headings(self) -> list[ContentElement]:
-        return [e for e in self.content if e.type == ContentType.HEADING]
+    def get_headings(self) -> list[HeadingElement]:
+        return [e for e in self.content if isinstance(e, HeadingElement)]
 
 
 class ParsedDocument(BaseModel):

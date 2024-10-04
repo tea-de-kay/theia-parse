@@ -4,10 +4,16 @@ from abc import ABC, abstractmethod
 from typing import Any, Deque, Literal
 
 from jinja2 import Environment as JinjaEnvironment
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel
 
 from theia_parse.__spi__ import BaseEnvSettings
-from theia_parse.model import ContentElement, DocumentPage, LlmUsage, Medium
+from theia_parse.model import (
+    ContentElement,
+    DocumentPage,
+    HeadingElement,
+    LlmUsage,
+    Medium,
+)
 from theia_parse.parser.__spi__ import PromptConfig
 
 
@@ -69,7 +75,7 @@ class PromptAdditions(BaseModel):
     def create(
         config: PromptConfig,
         raw_extracted_text: str | None = None,
-        previous_headings: Deque[ContentElement] | None = None,
+        previous_headings: Deque[HeadingElement] | None = None,
         previous_parsed_pages: Deque[DocumentPage] | None = None,
         embedded_images: list[Medium] | None = None,
     ) -> PromptAdditions:
@@ -91,10 +97,13 @@ class PromptAdditions(BaseModel):
 
     @staticmethod
     def _previous_headings(
-        previous_headings: Deque[ContentElement] | None,
+        previous_headings: Deque[HeadingElement] | None,
     ) -> list[str] | None:
         if previous_headings is not None:
-            return [f"{h.type}: {h.content}" for h in previous_headings]
+            return [
+                f"heading_level {h.heading_level}: {h.content}"
+                for h in previous_headings
+            ]
 
     @staticmethod
     def _previous_parsed_pages(
