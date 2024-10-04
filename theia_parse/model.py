@@ -15,6 +15,7 @@ class LlmUsage(BaseModel):
     request_tokens: int | None = None
     response_tokens: int | None = None
     total_tokens: int | None = None
+    model: str | None = None
 
 
 class ContentType(StrEnum):
@@ -124,4 +125,8 @@ class ParsedDocument(BaseModel):
             request_tokens += element.token_usage.request_tokens or 0
             response_tokens += element.token_usage.response_tokens or 0
 
-        return LlmUsage(request_tokens=request_tokens, response_tokens=response_tokens)
+        model = self.content[0].token_usage.model if self.content else None
+
+        return LlmUsage(
+            request_tokens=request_tokens, response_tokens=response_tokens, model=model
+        )

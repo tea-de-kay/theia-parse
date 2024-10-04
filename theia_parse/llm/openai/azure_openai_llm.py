@@ -81,6 +81,7 @@ class AzureOpenAiLLM(LLM):
             usage=LlmUsage(
                 request_tokens=usage.prompt_tokens,
                 response_tokens=usage.completion_tokens,
+                model=response.model,
             ),
         )
 
