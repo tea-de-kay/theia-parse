@@ -2,11 +2,14 @@ import os
 from pathlib import Path
 
 from theia_parse.const import PARSED_JSON_SUFFIXES
-from theia_parse.model import ContentElement, DocumentPage, ParsedDocument
+from theia_parse.formatter.markdown_formatter import MarkdownFormatter
+from theia_parse.model import DocumentPage, ParsedDocument
 from theia_parse.util.files import has_suffixes, read_json, with_suffix
 
 
 PATH = (Path(__file__).parent.parent / "data/sample").resolve()
+
+formatter = MarkdownFormatter()
 
 
 def main():
@@ -25,19 +28,9 @@ def main():
                 save_path.write_text(text)
 
 
-def content_to_markdown(content: ContentElement) -> str:
-    if content.is_heading():
-        return f"{'#'*content.heading_level} {content.content}"
-    elif content.type == "image":
-        return f"![{content.content}](...)"
-    else:
-        return content.content
-
-
 def page_to_markdown(page: DocumentPage) -> str:
     text = f"PAGE: {page.page_number}\n"
-    for content in page.content:
-        text = f"{text}\n\n{content_to_markdown(content)}"
+    text = f"{text}\n\n{formatter.format(page.content)}"
 
     return text
 

@@ -214,8 +214,8 @@ class PdfParser(FileParser):
 
         return content, media
 
+    @staticmethod
     def _get_images(
-        self,
         page: PdfPage,
         config: DocumentParserConfig,
     ) -> tuple[Medium | None, list[EmbeddedPdfPageImage]]:
