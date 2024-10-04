@@ -1,3 +1,4 @@
+# TODO: modify prompt extraction without images
 PDF_EXTRACT_CONTENT_SYSTEM_PROMPT_TEMPLATE = """
 {% if system_prompt_preamble %}
 {{ system_prompt_preamble }}

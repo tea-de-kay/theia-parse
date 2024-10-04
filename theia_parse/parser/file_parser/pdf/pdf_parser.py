@@ -90,9 +90,7 @@ class PdfParser(FileParser):
         parsed_pages: Deque[DocumentPage],
         config: DocumentParserConfig,
     ) -> DocumentPage | None:
-        page_image, embedded_images = self._get_images(
-            page, config.image_extraction_config
-        )
+        page_image, embedded_images = self._get_images(page, config)
 
         # TODO: use better parser
         raw_extracted_text = page.extract_text()
@@ -156,7 +154,7 @@ class PdfParser(FileParser):
         raw_extracted_text: str,
         headings: Deque[HeadingElement],
         parsed_pages: Deque[DocumentPage],
-        page_image: Medium,
+        page_image: Medium | None,
         embedded_images: list[Medium],
     ) -> LlmResponse | None:
         prompt_additions = PromptAdditions.create(
@@ -169,7 +167,9 @@ class PdfParser(FileParser):
 
         system_prompt = self._system_prompt.render(prompt_additions.to_dict())
         user_prompt = self._user_prompt.render(prompt_additions.to_dict())
-        images = [page_image] + embedded_images
+        images = embedded_images
+        if page_image is not None:
+            images = [page_image] + images
 
         return self._llm.generate(
             system_prompt=system_prompt,
@@ -221,15 +221,19 @@ class PdfParser(FileParser):
     def _get_images(
         self,
         page: PdfPage,
-        config: ImageExtractionConfig,
-    ) -> tuple[Medium, list[EmbeddedPdfPageImage]]:
+        config: DocumentParserConfig,
+    ) -> tuple[Medium | None, list[EmbeddedPdfPageImage]]:
+        if not config.use_vision:
+            return None, []
+
+        image_config = config.image_extraction_config
         full_page_image = Medium.create_from_image(
             id="",
-            image_format=config.image_format,
-            raw=page.to_image(resolution=config.resolution).original,
+            image_format=image_config.image_format,
+            raw=page.to_image(resolution=image_config.resolution).original,
         )
 
-        if not config.extract_images:
+        if not image_config.extract_images:
             return full_page_image, []
 
         embedded_images: list[EmbeddedPdfPageImage] = []
@@ -242,7 +246,7 @@ class PdfParser(FileParser):
                 embedded_images.append(img)
                 caption_idx += 1
 
-        if config.exclude_fully_contained:
+        if image_config.exclude_fully_contained:
             filtered = []
             for ei in embedded_images:
                 checks = [check for check in embedded_images if check is not ei]
