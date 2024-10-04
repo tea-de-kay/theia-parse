@@ -27,11 +27,7 @@ from theia_parse.model import (
     ParsedDocument,
     RawContentElement,
 )
-from theia_parse.parser.__spi__ import (
-    DocumentParserConfig,
-    ImageExtractionConfig,
-    PromptConfig,
-)
+from theia_parse.parser.__spi__ import DocumentParserConfig, PromptConfig
 from theia_parse.parser.file_parser.__spi__ import FileParser
 from theia_parse.parser.file_parser.pdf.embedded_pdf_page_image import (
     EmbeddedPdfPageImage,
@@ -240,7 +236,10 @@ class PdfParser(FileParser):
         caption_idx = 1
         for img_spec in page.images:
             img = EmbeddedPdfPageImage(
-                page=page, image_spec=img_spec, caption_idx=caption_idx, config=config
+                page=page,
+                image_spec=img_spec,
+                caption_idx=caption_idx,
+                config=image_config,
             )
             if img.is_relevant:
                 embedded_images.append(img)
