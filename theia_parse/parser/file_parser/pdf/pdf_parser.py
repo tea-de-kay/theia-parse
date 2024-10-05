@@ -27,7 +27,11 @@ from theia_parse.model import (
     ParsedDocument,
     RawContentElement,
 )
-from theia_parse.parser.__spi__ import DocumentParserConfig, PromptConfig
+from theia_parse.parser.__spi__ import (
+    DocumentParserConfig,
+    ImageExtractionConfig,
+    PromptConfig,
+)
 from theia_parse.parser.file_parser.__spi__ import FileParser
 from theia_parse.parser.file_parser.pdf.embedded_pdf_page_image import (
     EmbeddedPdfPageImage,
@@ -214,8 +218,8 @@ class PdfParser(FileParser):
 
         return content, media
 
-    @staticmethod
     def _get_images(
+        self,
         page: PdfPage,
         config: DocumentParserConfig,
     ) -> tuple[Medium | None, list[EmbeddedPdfPageImage]]:
@@ -232,6 +236,14 @@ class PdfParser(FileParser):
         if not image_config.extract_images:
             return full_page_image, []
 
+        embedded_images = self._get_embedded_images(page, image_config)
+
+        return full_page_image, embedded_images
+
+    @staticmethod
+    def _get_embedded_images(
+        page: PdfPage, config: ImageExtractionConfig
+    ) -> list[EmbeddedPdfPageImage]:
         embedded_images: list[EmbeddedPdfPageImage] = []
         caption_idx = 1
         for img_spec in page.images:
@@ -239,13 +251,13 @@ class PdfParser(FileParser):
                 page=page,
                 image_spec=img_spec,
                 caption_idx=caption_idx,
-                config=image_config,
+                config=config,
             )
             if img.is_relevant:
                 embedded_images.append(img)
                 caption_idx += 1
 
-        if image_config.exclude_fully_contained:
+        if config.exclude_fully_contained:
             filtered = []
             for ei in embedded_images:
                 checks = [check for check in embedded_images if check is not ei]
@@ -253,4 +265,7 @@ class PdfParser(FileParser):
                     filtered.append(ei)
             embedded_images = filtered
 
-        return full_page_image, embedded_images
+        embedded_images = sorted(embedded_images, key=lambda x: x.size, reverse=True)
+        embedded_images = embedded_images[: config.max_images_per_page]
+
+        return embedded_images

@@ -16,7 +16,7 @@ def calc_image_token_usage(
     Based on https://platform.openai.com/docs/guides/vision/calculating-costs
     """
 
-    if low_res:
+    if low_res or max(width, height) < 512:
         return LlmUsage(request_tokens=base_tokens)
 
     # Step 1: If either side exceeds 2048, scale down to fit within a 2048x2048 square
@@ -36,6 +36,6 @@ def calc_image_token_usage(
     total_tiles = num_tiles_width * num_tiles_height
 
     # Step 4: Calculate the total token cost
-    token_cost = tokens_per_tile * total_tiles + base_tokens
+    tokens = tokens_per_tile * total_tiles + base_tokens
 
-    return LlmUsage(request_tokens=token_cost)
+    return LlmUsage(request_tokens=tokens)

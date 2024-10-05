@@ -12,20 +12,19 @@ from tqdm import tqdm
 
 from theia_parse.llm.openai.util import calc_image_token_usage
 from theia_parse.model import LlmUsage
-from theia_parse.parser.__spi__ import DocumentParserConfig
+from theia_parse.parser.__spi__ import DocumentParserConfig, ImageExtractionConfig
 from theia_parse.parser.file_parser.pdf.pdf_parser import PdfParser
 
 
-DATA_DIR = Path(__file__).parent.parent / "data/sample"
+DATA_DIR = Path(__file__).parent.parent / "data"
 
-CONFIG = DocumentParserConfig()
+CONFIG = DocumentParserConfig(image_extraction_config=ImageExtractionConfig())
 
 # GPT-4o-mini
 IMAGE_BASE_TOKENS = 2833
 IMAGE_TOKENS_PER_TILE = 5667
-N = 1_000_000
-EURO_PER_REQUEST_TOKENS = 2.6867 / N
-EURO_PER_RESPONSE_TOKENS = 10.746430 / N
+EURO_PER_REQUEST_TOKENS = 2.6867 / 1_000_000
+EURO_PER_RESPONSE_TOKENS = 10.746430 / 1_000_000
 
 TOKENS_PER_CHAR = 0.3
 PROMPT_TOKENS = 1_000
@@ -33,20 +32,36 @@ TEXT_OUTPUT_TOKENS_PER_CHAR = 1
 
 
 def main():
+    all_paths: list[Path] = []
+    for root, _, file_names in os.walk(DATA_DIR):
+        root = Path(root)
+        paths = sorted(root / f for f in file_names if _is_file_supported(f))
+        all_paths.extend(paths)
+
     request_tokens = 0
     response_tokens = 0
-    for root, _, file_names in tqdm(os.walk(DATA_DIR)):
-        for file_name in file_names:
-            path = Path(root) / file_name
-            if path.suffix.lower() == ".pdf":
-                usage = _estimate_usage_pdf(path)
-                assert usage.request_tokens is not None
-                assert usage.response_tokens is not None
+    total_usage = LlmUsage(
+        request_tokens=request_tokens, response_tokens=response_tokens
+    )
+    for path in tqdm(all_paths):
+        tqdm.write(str(path))
+        usage = _estimate_usage_pdf(path)
+        assert usage.request_tokens is not None
+        assert usage.response_tokens is not None
 
-                request_tokens += usage.request_tokens
-                response_tokens += usage.response_tokens
+        request_tokens += usage.request_tokens
+        response_tokens += usage.response_tokens
 
-    estimated_costs = _calc_price(usage)
+        total_usage = LlmUsage(
+            request_tokens=request_tokens, response_tokens=response_tokens
+        )
+        estimated_costs = _calc_price(total_usage)
+        tqdm.write(
+            f"Estimated token usage up to now: request {usage.request_tokens}; "
+            f"response: {usage.response_tokens}; € {estimated_costs:.2f}.\n"
+        )
+
+    estimated_costs = _calc_price(total_usage)
     print(
         "Estimated token usage: "
         f"request {usage.request_tokens}; response: {usage.response_tokens}"
@@ -62,6 +77,10 @@ def _calc_price(usage: LlmUsage) -> float:
         usage.request_tokens * EURO_PER_REQUEST_TOKENS
         + usage.response_tokens * EURO_PER_RESPONSE_TOKENS
     )
+
+
+def _is_file_supported(file_name: str) -> bool:
+    return file_name.lower().endswith(".pdf")
 
 
 def _estimate_usage_pdf(path: Path) -> LlmUsage:
@@ -105,7 +124,9 @@ def _calc_text_usage(page: PdfPage) -> LlmUsage:
 
 
 def _calc_image_usage(page: PdfPage) -> LlmUsage:
-    _, embedded_images = PdfParser._get_images(page, CONFIG)
+    embedded_images = PdfParser._get_embedded_images(
+        page, CONFIG.image_extraction_config
+    )
     res = CONFIG.image_extraction_config.resolution
     sizes = [_to_pixels(page.width, page.height, res)]
     sizes += [_to_pixels(img.width, img.height, res) for img in embedded_images]

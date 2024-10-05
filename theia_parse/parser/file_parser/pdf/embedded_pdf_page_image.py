@@ -61,6 +61,10 @@ class EmbeddedPdfPageImage:
         return self._img_spec["bottom"] - self._img_spec["top"]
 
     @property
+    def size(self) -> float:
+        return self.width * self.height
+
+    @property
     def is_relevant(self) -> bool:
         if self._config.min_size is not None and self.is_smaller_than(
             self._config.min_size

@@ -37,6 +37,9 @@ class ImageExtractionConfig(BaseModel):
     exclude_fully_contained: bool = True
     """Whether to exclude images which are fully contained in another image"""
 
+    max_images_per_page: int = 10
+    """Keep at most the largest N embedded images per page"""
+
     resolution: int = 300
     image_format: ImageFormat = "webp"
 
