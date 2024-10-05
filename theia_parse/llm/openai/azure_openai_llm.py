@@ -10,9 +10,10 @@ from theia_parse.llm.__spi__ import (
     LLM,
     LlmApiSettings,
     LlmGenerationConfig,
+    LlmMedium,
     LlmResponse,
 )
-from theia_parse.model import LlmUsage, Medium
+from theia_parse.model import LlmUsage
 from theia_parse.util.log import LogFactory
 
 
@@ -39,7 +40,7 @@ class AzureOpenAiLLM(LLM):
         self,
         system_prompt: str,
         user_prompt: str,
-        images: list[Medium],
+        media: list[LlmMedium],
         config: LlmGenerationConfig,
     ) -> LlmResponse | None:
         _log.trace(
@@ -53,7 +54,7 @@ class AzureOpenAiLLM(LLM):
             response_format = {"type": "json_object"}
 
         messages = self._assemble_raw_messages(
-            system_prompt=system_prompt, user_prompt=user_prompt, images=images
+            system_prompt=system_prompt, user_prompt=user_prompt, media=media
         )
 
         try:
@@ -85,22 +86,31 @@ class AzureOpenAiLLM(LLM):
             ),
         )
 
-    def _assemble_image_url(self, image: Medium) -> dict[str, str | dict[str, str]]:
+    def _assemble_image_url(
+        self,
+        medium: LlmMedium,
+    ) -> dict[str, str | dict[str, str]]:
+        image = medium.image
         return {
             "type": "image_url",
-            "image_url": {"url": f"data:{image.mime_type};base64,{image.content_b64}"},
+            "image_url": {
+                "url": f"data:{image.mime_type};base64,{image.content_b64}",
+                "detail": medium.detail_level,
+            },
         }
 
     def _assemble_raw_messages(
         self,
         system_prompt: str,
         user_prompt: str,
-        images: list[Medium],
+        media: list[LlmMedium],
     ) -> list[ChatCompletionMessageParam]:
         system_message = {"role": "system", "content": system_prompt}
 
         user_message_content: list[dict] = [{"type": "text", "text": user_prompt}]
-        user_message_content.extend(self._assemble_image_url(image) for image in images)
+        user_message_content.extend(
+            self._assemble_image_url(medium) for medium in media
+        )
         user_message = {"role": "user", "content": user_message_content}
 
         messages = cast(

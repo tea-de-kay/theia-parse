@@ -113,6 +113,11 @@ class PromptAdditions(BaseModel):
             return [p.content_to_string() for p in previous_parsed_pages]
 
 
+class LlmMedium(BaseModel):
+    image: Medium
+    detail_level: Literal["auto", "low", "hight"] = "auto"
+
+
 class LLM(ABC):
     """
     Multimodal LLM
@@ -123,7 +128,7 @@ class LLM(ABC):
         self,
         system_prompt: str,
         user_prompt: str,
-        images: list[Medium],
+        media: list[LlmMedium],
         config: LlmGenerationConfig,
     ) -> LlmResponse | None:
         pass

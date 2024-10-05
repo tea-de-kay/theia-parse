@@ -40,6 +40,9 @@ class ImageExtractionConfig(BaseModel):
     max_images_per_page: int = 10
     """Keep at most the largest N embedded images per page"""
 
+    use_low_details: bool = True
+    """Whether to only use a low resolution version for llm inference to save tokens."""
+
     resolution: int = 300
     image_format: ImageFormat = "webp"
 

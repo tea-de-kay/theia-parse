@@ -128,15 +128,27 @@ def _calc_image_usage(page: PdfPage) -> LlmUsage:
         page, CONFIG.image_extraction_config
     )
     res = CONFIG.image_extraction_config.resolution
-    sizes = [_to_pixels(page.width, page.height, res)]
-    sizes += [_to_pixels(img.width, img.height, res) for img in embedded_images]
+    page_size = _to_pixels(page.width, page.height, res)
+    embedded_sizes = [_to_pixels(img.width, img.height, res) for img in embedded_images]
 
-    usages = [
-        calc_image_token_usage(w, h, IMAGE_BASE_TOKENS, IMAGE_TOKENS_PER_TILE)
-        for w, h in sizes
+    page_usage = calc_image_token_usage(
+        page_size[0], page_size[1], IMAGE_BASE_TOKENS, IMAGE_TOKENS_PER_TILE
+    )
+    embedded_usages = [
+        calc_image_token_usage(
+            w,
+            h,
+            IMAGE_BASE_TOKENS,
+            IMAGE_TOKENS_PER_TILE,
+            low_res=CONFIG.image_extraction_config.use_low_details,
+        )
+        for w, h in embedded_sizes
     ]
 
-    return LlmUsage(request_tokens=sum(u.request_tokens or 0 for u in usages))
+    tokens = page_usage.request_tokens or 0 + sum(
+        u.request_tokens or 0 for u in embedded_usages
+    )
+    return LlmUsage(request_tokens=tokens)
 
 
 def _to_pixels(width: float, height: float, resolution: int) -> tuple[int, int]:

@@ -9,6 +9,7 @@ from pdfplumber.page import Page as PdfPage
 from theia_parse.llm.__spi__ import (
     LlmApiSettings,
     LlmGenerationConfig,
+    LlmMedium,
     LlmResponse,
     Prompt,
     PromptAdditions,
@@ -27,11 +28,7 @@ from theia_parse.model import (
     ParsedDocument,
     RawContentElement,
 )
-from theia_parse.parser.__spi__ import (
-    DocumentParserConfig,
-    ImageExtractionConfig,
-    PromptConfig,
-)
+from theia_parse.parser.__spi__ import DocumentParserConfig, ImageExtractionConfig
 from theia_parse.parser.file_parser.__spi__ import FileParser
 from theia_parse.parser.file_parser.pdf.embedded_pdf_page_image import (
     EmbeddedPdfPageImage,
@@ -96,7 +93,7 @@ class PdfParser(FileParser):
         raw_extracted_text = page.extract_text()
 
         response = self._call_llm(
-            config=config.prompt_config,
+            config=config,
             raw_extracted_text=raw_extracted_text,
             headings=headings,
             parsed_pages=parsed_pages,
@@ -150,15 +147,18 @@ class PdfParser(FileParser):
 
     def _call_llm(
         self,
-        config: PromptConfig,
+        config: DocumentParserConfig,
         raw_extracted_text: str,
         headings: Deque[HeadingElement],
         parsed_pages: Deque[DocumentPage],
         page_image: Medium | None,
         embedded_images: list[Medium],
     ) -> LlmResponse | None:
+        prompt_config = config.prompt_config
+        image_config = config.image_extraction_config
+
         prompt_additions = PromptAdditions.create(
-            config=config,
+            config=prompt_config,
             raw_extracted_text=raw_extracted_text,
             previous_headings=headings,
             previous_parsed_pages=parsed_pages,
@@ -167,14 +167,20 @@ class PdfParser(FileParser):
 
         system_prompt = self._system_prompt.render(prompt_additions.to_dict())
         user_prompt = self._user_prompt.render(prompt_additions.to_dict())
-        images = embedded_images
+        images = [
+            LlmMedium(
+                image=img,
+                detail_level="low" if image_config.use_low_details else "auto",
+            )
+            for img in embedded_images
+        ]
         if page_image is not None:
-            images = [page_image] + images
+            images = [LlmMedium(image=page_image)] + images
 
         return self._llm.generate(
             system_prompt=system_prompt,
             user_prompt=user_prompt,
-            images=images,
+            media=images,
             config=LlmGenerationConfig(),
         )
 
