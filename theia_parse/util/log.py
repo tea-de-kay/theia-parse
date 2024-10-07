@@ -9,7 +9,12 @@ load_dotenv()
 
 log_level = os.environ.get("LOG_LEVEL", "INFO").upper()
 is_debug = True if log_level in ["DEBUG", "TRACE"] else False
-logger.remove(0)
+
+try:
+    logger.remove(0)
+except ValueError:
+    pass
+
 logger.add(
     lambda msg: tqdm.write(msg, end=""),
     colorize=True,
