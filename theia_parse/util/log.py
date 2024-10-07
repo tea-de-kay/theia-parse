@@ -17,7 +17,7 @@ logger.add(
     level=log_level,
     backtrace=True,
     diagnose=is_debug,
-    filter=lambda record: True if "default" == record["extra"]["name"] else False,
+    filter=lambda record: record["extra"].get("name") == "default",
 )
 
 
