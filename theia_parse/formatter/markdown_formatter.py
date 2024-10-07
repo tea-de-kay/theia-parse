@@ -7,7 +7,7 @@ class MarkdownFormatter(Formatter):
         return f"{'#'*element.heading_level} {element.content}"
 
     def _format_image(self, element: ImageElement) -> str:
-        return f"![Image](/{element.medium_id})\nCaption: {element.content}"
+        return f"![Image](/{element.medium_id})\n\nCaption: {element.content}"
 
     def _format_element(self, element: ContentElement) -> str:
         return element.content
