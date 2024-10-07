@@ -16,7 +16,7 @@ from theia_parse.parser.__spi__ import DocumentParserConfig, ImageExtractionConf
 from theia_parse.parser.file_parser.pdf.pdf_parser import PdfParser
 
 
-DATA_DIR = Path(__file__).parent.parent / "data"
+DATA_DIR = Path(__file__).parent.parent / "data/sample"
 
 CONFIG = DocumentParserConfig(image_extraction_config=ImageExtractionConfig())
 
