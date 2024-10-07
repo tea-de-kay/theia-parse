@@ -19,7 +19,7 @@ logger.add(
     lambda msg: tqdm.write(msg, end=""),
     colorize=True,
     format=(
-        "{time} <light-blue>[{thread.name} | {module}]</light-blue> "
+        "{time} <light-blue>[theia-parse | {thread.name} | {module}]</light-blue> "
         "<level>{level}</level> {message}"
     ),
     level=log_level,
