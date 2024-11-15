@@ -7,6 +7,7 @@ from dotenv import load_dotenv
 PROJECT_ROOT = Path(__file__).parent.parent
 TESTS_ROOT = PROJECT_ROOT / "tests"
 RESOURCE_PATH = TESTS_ROOT / "resources"
+LOCAL_RESOURCE_PATH = TESTS_ROOT / "resources/__local__"
 DOTENV_PATH = PROJECT_ROOT / ".env"
 
 

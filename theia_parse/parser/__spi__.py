@@ -59,6 +59,7 @@ class DocumentParserConfig(BaseModel):
     verbose: bool = True
     save_file: bool = False
     use_vision: bool = True
+    post_improve: bool = False
     prompt_config: PromptConfig = PromptConfig()
     image_extraction_config: ImageExtractionConfig = ImageExtractionConfig()
 

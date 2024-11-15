@@ -17,6 +17,8 @@ from theia_parse.llm.__spi__ import (
 from theia_parse.llm.prompt_templates import (
     PDF_EXTRACT_CONTENT_SYSTEM_PROMPT_TEMPLATE,
     PDF_EXTRACT_CONTENT_USER_PROMPT_TEMPLATE,
+    PDF_IMPROVE_SYSTEM_PROMPT_TEMPLATE,
+    PDF_IMPROVE_USER_PROMPT_TEMPLATE,
 )
 from theia_parse.llm.response_parser.json_parser import JsonParser
 from theia_parse.model import (
@@ -46,8 +48,12 @@ _log = LogFactory.get_logger()
 class PdfParser(FileParser):
     def __init__(self, llm_api_settings: LlmApiSettings) -> None:
         super().__init__(llm_api_settings)
-        self._system_prompt = Prompt(PDF_EXTRACT_CONTENT_SYSTEM_PROMPT_TEMPLATE)
-        self._user_prompt = Prompt(PDF_EXTRACT_CONTENT_USER_PROMPT_TEMPLATE)
+        self._system_prompt_extraction = Prompt(
+            PDF_EXTRACT_CONTENT_SYSTEM_PROMPT_TEMPLATE
+        )
+        self._user_prompt_extraction = Prompt(PDF_EXTRACT_CONTENT_USER_PROMPT_TEMPLATE)
+        self._system_prompt_improve = Prompt(PDF_IMPROVE_SYSTEM_PROMPT_TEMPLATE)
+        self._user_prompt_improve = Prompt(PDF_IMPROVE_USER_PROMPT_TEMPLATE)
         self._json_parser = JsonParser()
 
     def parse(self, path: Path, config: DocumentParserConfig) -> ParsedDocument:
@@ -105,6 +111,17 @@ class PdfParser(FileParser):
         if response is None:
             return
 
+        if config.post_improve:
+            improved = self._improve_parsed(
+                config=config,
+                raw_parsed=response.raw,
+                raw_extracted_text=raw_extracted_text,
+                page_image=page_image,
+            )
+            if improved is not None:
+                improved.usage += response.usage
+                response = improved
+
         parsed_response = self._json_parser.parse(response.raw)
         if parsed_response is None:
             return
@@ -154,19 +171,20 @@ class PdfParser(FileParser):
         page_image: Medium | None,
         embedded_images: list[Medium],
     ) -> LlmResponse | None:
-        prompt_config = config.prompt_config
         image_config = config.image_extraction_config
 
         prompt_additions = PromptAdditions.create(
-            config=prompt_config,
+            config=config,
             raw_extracted_text=raw_extracted_text,
             previous_headings=headings,
             previous_parsed_pages=parsed_pages,
             embedded_images=embedded_images,
         )
 
-        system_prompt = self._system_prompt.render(prompt_additions.to_dict())
-        user_prompt = self._user_prompt.render(prompt_additions.to_dict())
+        system_prompt = self._system_prompt_extraction.render(
+            prompt_additions.to_dict()
+        )
+        user_prompt = self._user_prompt_extraction.render(prompt_additions.to_dict())
         images = [
             LlmMedium(
                 image=img,
@@ -176,6 +194,32 @@ class PdfParser(FileParser):
         ]
         if page_image is not None:
             images = [LlmMedium(image=page_image)] + images
+
+        return self._llm.generate(
+            system_prompt=system_prompt,
+            user_prompt=user_prompt,
+            media=images,
+            config=LlmGenerationConfig(),
+        )
+
+    def _improve_parsed(
+        self,
+        config: DocumentParserConfig,
+        raw_parsed: str,
+        raw_extracted_text: str,
+        page_image: Medium | None,
+    ) -> LlmResponse | None:
+        prompt_additions = PromptAdditions.create(
+            config=config,
+            raw_extracted_text=raw_extracted_text,
+            raw_parsed=raw_parsed,
+        )
+
+        system_prompt = self._system_prompt_improve.render(prompt_additions.to_dict())
+        user_prompt = self._user_prompt_improve.render(prompt_additions.to_dict())
+        images = []
+        if page_image is not None:
+            images = [LlmMedium(image=page_image)]
 
         return self._llm.generate(
             system_prompt=system_prompt,
@@ -273,5 +317,8 @@ class PdfParser(FileParser):
 
         embedded_images = sorted(embedded_images, key=lambda x: x.size, reverse=True)
         embedded_images = embedded_images[: config.max_images_per_page]
+
+        for caption_idx, ei in enumerate(embedded_images, start=1):
+            ei.caption_idx = caption_idx
 
         return embedded_images

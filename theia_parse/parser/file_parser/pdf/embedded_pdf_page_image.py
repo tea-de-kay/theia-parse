@@ -30,6 +30,10 @@ class EmbeddedPdfPageImage:
     def caption_idx(self) -> int:
         return self._caption_idx
 
+    @caption_idx.setter
+    def caption_idx(self, value: int) -> None:
+        self._caption_idx = value
+
     @cached_property
     def raw_image(self) -> Image:
         crop = self._page.within_bbox(self.bbox, strict=False)

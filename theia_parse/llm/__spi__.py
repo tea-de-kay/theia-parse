@@ -14,7 +14,7 @@ from theia_parse.model import (
     LlmUsage,
     Medium,
 )
-from theia_parse.parser.__spi__ import PromptConfig
+from theia_parse.parser.__spi__ import DocumentParserConfig, PromptConfig
 
 
 LlmApiProvider = Literal["azure_openai"]
@@ -70,26 +70,33 @@ class PromptAdditions(BaseModel):
     previous_headings: list[str] | None = None
     previous_parsed_pages: list[str] | None = None
     embedded_images: bool | None = None
+    raw_parsed: str | None = None
+    use_vision: bool | None = None
 
     @staticmethod
     def create(
-        config: PromptConfig,
+        config: DocumentParserConfig,
         raw_extracted_text: str | None = None,
         previous_headings: Deque[HeadingElement] | None = None,
         previous_parsed_pages: Deque[DocumentPage] | None = None,
         embedded_images: list[Medium] | None = None,
+        raw_parsed: str | None = None,
     ) -> PromptAdditions:
         return PromptAdditions(
-            system_prompt_preamble=config.system_prompt_preamble,
-            custom_instructions=config.custom_instructions,
+            system_prompt_preamble=config.prompt_config.system_prompt_preamble,
+            custom_instructions=config.prompt_config.custom_instructions,
             raw_extracted_text=(
-                raw_extracted_text if config.include_raw_extracted_text else None
+                raw_extracted_text
+                if config.prompt_config.include_raw_extracted_text
+                else None
             ),
             previous_headings=PromptAdditions._previous_headings(previous_headings),
             previous_parsed_pages=PromptAdditions._previous_parsed_pages(
                 previous_parsed_pages
             ),
             embedded_images=bool(embedded_images),
+            raw_parsed=raw_parsed,
+            use_vision=config.use_vision,
         )
 
     def to_dict(self) -> dict[str, Any]:
