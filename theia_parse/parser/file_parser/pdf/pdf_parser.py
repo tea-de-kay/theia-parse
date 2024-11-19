@@ -3,6 +3,7 @@ from collections.abc import Iterable
 from pathlib import Path
 from typing import Any, Deque
 
+import pdf2image
 import pdfplumber
 from pdfplumber.page import Page as PdfPage
 
@@ -37,9 +38,6 @@ from theia_parse.parser.file_parser.pdf.embedded_pdf_page_image import (
 )
 from theia_parse.util.files import get_md5_sum
 from theia_parse.util.log import LogFactory
-
-
-IMAGE_NUMBER_PATTERN = r"\s*image_number\s*=\s*(\d+)\s*(.*)"
 
 
 _log = LogFactory.get_logger()
@@ -78,7 +76,9 @@ class PdfParser(FileParser):
 
         with pdfplumber.open(path) as pdf:
             for page in pdf.pages:
-                parsed_page = self._parse_page(page, headings, parsed_pages, config)
+                parsed_page = self._parse_page(
+                    path, page, headings, parsed_pages, config
+                )
                 if parsed_page is not None:
                     headings.extend(parsed_page.get_headings())
                     parsed_pages.append(parsed_page)
@@ -88,12 +88,13 @@ class PdfParser(FileParser):
 
     def _parse_page(
         self,
+        path: Path,
         page: PdfPage,
         headings: Deque[HeadingElement],
         parsed_pages: Deque[DocumentPage],
         config: DocumentParserConfig,
     ) -> DocumentPage | None:
-        page_image, embedded_images = self._get_images(page, config)
+        page_image, embedded_images = self._get_images(path, page, config)
 
         # TODO: use better parser
         raw_extracted_text = page.extract_text()
@@ -219,6 +220,7 @@ class PdfParser(FileParser):
         user_prompt = self._user_prompt_improve.render(prompt_additions.to_dict())
         images = []
         if page_image is not None:
+            # TODO: improve based on multiple image tiles for more details
             images = [LlmMedium(image=page_image)]
 
         return self._llm.generate(
@@ -270,6 +272,7 @@ class PdfParser(FileParser):
 
     def _get_images(
         self,
+        path: Path,
         page: PdfPage,
         config: DocumentParserConfig,
     ) -> tuple[Medium | None, list[EmbeddedPdfPageImage]]:
@@ -280,7 +283,12 @@ class PdfParser(FileParser):
         full_page_image = Medium.create_from_image(
             id="",
             image_format=image_config.image_format,
-            raw=page.to_image(resolution=image_config.resolution).original,
+            raw=pdf2image.convert_from_path(
+                path,
+                dpi=image_config.resolution,
+                first_page=page.page_number,
+                last_page=page.page_number,
+            )[0],
         )
 
         if not image_config.extract_images:
