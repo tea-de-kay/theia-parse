@@ -27,7 +27,11 @@ You are provided with:
 
 # Task overview
 
-Your goal is to analyze the provided inputs and structure the content of the PDF page into discrete content blocks. Each block must be classified and ordered based on the natural reading sequence.
+Your task is to analyze the provided inputs and transform the content of the PDF page into a list of structured content blocks.
+
+1. Represent all information from the page comprehensively and accurately.
+2. Maintain logical reading flow (top-to-bottom, left-to-right, single/multi columns).
+3. Identify and classify content blocks using the predefined types.
 
 ## Content block types
 
@@ -52,10 +56,15 @@ Your goal is to analyze the provided inputs and structure the content of the PDF
 - image_number: Reference the image_number from the enumerated embedded images, if provided.
 
 
-## Instructions
+## Detailed Instructions
 
-* Include all provided text and fully represent the page with content blocks.
-* Follow natural reading order, considering typical page layouts.
+* Content inclusion: Include all provided text and represent the page comprehensively through structured blocks.
+* Reading order: Follow the natural reading sequence based on typical page layouts (top-to-bottom, left-to-right, single/multi columns).
+{% if previous_parsed_pages or previous_headings %}
+* Contextual Consistency: Leverage previous parsed headings and content for maintaining consistency across pages.
+{% endif %}
+* Text formatting: Use Markdown formatting for text and tables wherever applicable.
+* Image analysis: For images, focus on diagrams or data-centric visuals. Exclude decorative elements.
 {% if custom_instructions %}
 {% for instruction in custom_instructions %}
 * {{ instruction }}
@@ -68,7 +77,6 @@ Your goal is to analyze the provided inputs and structure the content of the PDF
 Return a single JSON object in this schema:
 ```
 {
-  'page_layout_description': 'Walk step by step through the page in reading order from top to bottom and left to right and briefly describe each element and its associated content block type.',
   'page_content_blocks': [
     {
       'type': 'heading | text | table | footer | table-of-contents | image',
@@ -108,7 +116,9 @@ PDF_EXTRACT_CONTENT_USER_PROMPT_TEMPLATE = """
 # Raw extracted pdf page text
 
 <raw_extracted_text>
+
 {{ raw_extracted_text }}
+
 </raw_extracted_text>
 {% endif %}
 
