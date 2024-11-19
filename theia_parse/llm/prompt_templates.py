@@ -54,7 +54,7 @@ Your goal is to analyze the provided inputs and structure the content of the PDF
 
 ## Instructions
 
-* Include all provided text.
+* Include all provided text and fully represent the page with content blocks.
 * Follow natural reading order, considering typical page layouts.
 {% if custom_instructions %}
 {% for instruction in custom_instructions %}
@@ -68,7 +68,7 @@ Your goal is to analyze the provided inputs and structure the content of the PDF
 Return a single JSON object in this schema:
 ```
 {
-  'page_layout_description': 'Walk step by step through the page in reading order and briefly describe each element and its associated content block type.',
+  'page_layout_description': 'Walk step by step through the page in reading order from top to bottom and left to right and briefly describe each element and its associated content block type.',
   'page_content_blocks': [
     {
       'type': 'heading | text | table | footer | table-of-contents | image',
