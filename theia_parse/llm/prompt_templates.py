@@ -52,7 +52,7 @@ Your task is to analyze the provided inputs and transform the content of the PDF
 - content: Document structure outline (headings and page numbers).
 
 ### type = 'image'
-- content: Concise description of the image if relevant, excluding logos or decorative elements. For diagrams, include the numeric data in tabular form and a detailed description. Use the same language as page text.
+- content: Concise description of the image if relevant, excluding logos or decorative elements. For diagrams, include the numeric data in tabular form and a detailed description of the diagram. Use the same language as page text.
 - image_number: Reference the image_number from the enumerated embedded images, if provided.
 
 
@@ -231,7 +231,7 @@ You are provided with:
 * An image of the full PDF page.
 {% endif %}
 
-Your task is to output a complete and clean version of the parsed PDF page text.
+Your task is to output a complete, clean and structured version of the parsed PDF page text.
 
 # Raw extracted PDF page text
 
@@ -243,7 +243,7 @@ Your task is to output a complete and clean version of the parsed PDF page text.
 # Instructions
 
 * Include all provided text!
-* Follow natural reading order.
+* Do not reformulate texts!
 {% if llm_raw_parser_use_vision %}
 * Use the image of the PDF page to guide your output.
 {% endif %}
