@@ -9,6 +9,10 @@ from pydantic import BaseModel, computed_field
 
 from theia_parse.types import ImageFormat
 from theia_parse.util.image import image_to_bytes
+from theia_parse.util.log import LogFactory
+
+
+_log = LogFactory.get_logger()
 
 
 class LlmUsage(BaseModel):
@@ -72,7 +76,14 @@ class RawContentElement(BaseModel):
         if self.type == ContentType.IMAGE:
             medium_id = None
             if img_nr_to_id is not None and self.image_number is not None:
-                medium_id = img_nr_to_id[self.image_number]
+                medium_id = img_nr_to_id.get(self.image_number)
+                if medium_id is None:
+                    _log.warning(
+                        "Medium could not be matched to embedded image "
+                        "[img_nr_to_id={}, image_nr={}]",
+                        img_nr_to_id,
+                        self.image_number,
+                    )
 
             return ImageElement(content=self.content, medium_id=medium_id)
 
