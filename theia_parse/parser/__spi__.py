@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from pydantic import BaseModel
 
-from theia_parse.types import ImageFormat
+from theia_parse.types import ImageFormat, RawParserTypeName
 
 
 T_num = int | float
@@ -55,11 +55,17 @@ class PromptConfig(BaseModel):
     include_raw_extracted_text: bool = True
 
 
+class RawParserConfig(BaseModel):
+    parser_type: RawParserTypeName = "default"
+    llm_use_vision: bool = False
+
+
 class DocumentParserConfig(BaseModel):
     verbose: bool = True
     save_file: bool = False
     use_vision: bool = True
     post_improve: bool = False
+    raw_parser_config: RawParserConfig = RawParserConfig()
     prompt_config: PromptConfig = PromptConfig()
     image_extraction_config: ImageExtractionConfig = ImageExtractionConfig()
 

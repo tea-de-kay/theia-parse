@@ -72,6 +72,7 @@ class PromptAdditions(BaseModel):
     embedded_images: bool | None = None
     raw_parsed: str | None = None
     use_vision: bool | None = None
+    llm_raw_parser_use_vision: bool | None = None
 
     @staticmethod
     def create(
@@ -97,6 +98,7 @@ class PromptAdditions(BaseModel):
             embedded_images=bool(embedded_images),
             raw_parsed=raw_parsed,
             use_vision=config.use_vision,
+            llm_raw_parser_use_vision=config.raw_parser_config.llm_use_vision,
         )
 
     def to_dict(self) -> dict[str, Any]:
@@ -133,7 +135,7 @@ class LLM(ABC):
     @abstractmethod
     def generate(
         self,
-        system_prompt: str,
+        system_prompt: str | None,
         user_prompt: str,
         media: list[LlmMedium],
         config: LlmGenerationConfig,

@@ -20,6 +20,7 @@ from theia_parse.llm.prompt_templates import (
     PDF_EXTRACT_CONTENT_USER_PROMPT_TEMPLATE,
     PDF_IMPROVE_SYSTEM_PROMPT_TEMPLATE,
     PDF_IMPROVE_USER_PROMPT_TEMPLATE,
+    PDF_USER_PARSE_RAW,
 )
 from theia_parse.llm.response_parser.json_parser import JsonParser
 from theia_parse.model import (
@@ -27,6 +28,7 @@ from theia_parse.model import (
     DocumentPage,
     HeadingElement,
     ImageElement,
+    LlmUsage,
     Medium,
     ParsedDocument,
     RawContentElement,
@@ -52,6 +54,7 @@ class PdfParser(FileParser):
         self._user_prompt_extraction = Prompt(PDF_EXTRACT_CONTENT_USER_PROMPT_TEMPLATE)
         self._system_prompt_improve = Prompt(PDF_IMPROVE_SYSTEM_PROMPT_TEMPLATE)
         self._user_prompt_improve = Prompt(PDF_IMPROVE_USER_PROMPT_TEMPLATE)
+        self._user_prompt_parse_raw = Prompt(PDF_USER_PARSE_RAW)
         self._json_parser = JsonParser()
 
     def parse(self, path: Path, config: DocumentParserConfig) -> ParsedDocument:
@@ -96,8 +99,10 @@ class PdfParser(FileParser):
     ) -> DocumentPage | None:
         page_image, embedded_images = self._get_images(path, page, config)
 
-        # TODO: use better parser
-        raw_extracted_text = page.extract_text()
+        usage = LlmUsage()
+
+        raw_extracted_text, raw_usage = self._parse_raw(page, page_image, config)
+        usage += raw_usage
 
         response = self._call_llm(
             config=config,
@@ -112,6 +117,8 @@ class PdfParser(FileParser):
         if response is None:
             return
 
+        usage += response.usage
+
         if config.post_improve:
             improved = self._improve_parsed(
                 config=config,
@@ -120,7 +127,7 @@ class PdfParser(FileParser):
                 page_image=page_image,
             )
             if improved is not None:
-                improved.usage += response.usage
+                usage += improved.usage
                 response = improved
 
         parsed_response = self._json_parser.parse(response.raw)
@@ -141,7 +148,7 @@ class PdfParser(FileParser):
             media=media,
             raw_llm_response=response.raw,
             raw_extracted_text=raw_extracted_text,
-            token_usage=response.usage,
+            token_usage=usage,
             error=error,
         )
 
@@ -330,3 +337,35 @@ class PdfParser(FileParser):
             ei.caption_idx = caption_idx
 
         return embedded_images
+
+    def _parse_raw(
+        self,
+        page: PdfPage,
+        page_image: Medium | None,
+        config: DocumentParserConfig,
+    ) -> tuple[str, LlmUsage]:
+        raw = page.extract_text()
+        usage = LlmUsage()
+        if config.raw_parser_config.parser_type == "llm":
+            prompt_additions = PromptAdditions.create(
+                config=config,
+                raw_extracted_text=raw,
+            )
+
+            user_prompt = self._user_prompt_parse_raw.render(prompt_additions.to_dict())
+            images = []
+            if page_image is not None and config.raw_parser_config.llm_use_vision:
+                images = [LlmMedium(image=page_image)]
+
+            response = self._llm.generate(
+                system_prompt=None,
+                user_prompt=user_prompt,
+                media=images,
+                config=LlmGenerationConfig(json_mode=False),
+            )
+
+            if response is not None:
+                raw = response.raw
+                usage = response.usage
+
+        return raw, usage

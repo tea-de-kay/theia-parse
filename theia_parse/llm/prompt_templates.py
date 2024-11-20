@@ -113,7 +113,7 @@ PDF_EXTRACT_CONTENT_USER_PROMPT_TEMPLATE = """
 {% endif %}
 
 {% if raw_extracted_text %}
-# Raw extracted pdf page text
+# Raw extracted PDF page text
 
 <raw_extracted_text>
 
@@ -210,7 +210,7 @@ PDF_IMPROVE_USER_PROMPT_TEMPLATE = """
 ```
 
 {% if raw_extracted_text %}
-# Raw extracted pdf page text
+# Raw extracted PDF page text
 
 <raw_extracted_text>
 {{ raw_extracted_text }}
@@ -218,4 +218,33 @@ PDF_IMPROVE_USER_PROMPT_TEMPLATE = """
 {% endif %}
 
 Use all provided information to create an improved version of the JSON object of the parsed PDF page content.
+"""  # noqa
+
+
+PDF_USER_PARSE_RAW = """
+You are an expert for document parsing. You are precise, structured and always follow the given instructions.
+
+You are provided with:
+
+* The raw extracted text from a PDF page, which may be messy due to a complicated layout.
+{% if llm_raw_parser_use_vision %}
+* An image of the full PDF page.
+{% endif %}
+
+Your task is to output a complete and clean version of the parsed PDF page text.
+
+# Raw extracted PDF page text
+
+<raw_extracted_text>
+{{ raw_extracted_text }}
+</raw_extracted_text>
+
+
+# Instructions
+
+* Include all provided text!
+* Follow natural reading order.
+{% if llm_raw_parser_use_vision %}
+* Use the image of the PDF page to guide your output.
+{% endif %}
 """  # noqa

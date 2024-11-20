@@ -38,7 +38,7 @@ class AzureOpenAiLLM(LLM):
 
     def generate(
         self,
-        system_prompt: str,
+        system_prompt: str | None,
         user_prompt: str,
         media: list[LlmMedium],
         config: LlmGenerationConfig,
@@ -101,20 +101,22 @@ class AzureOpenAiLLM(LLM):
 
     def _assemble_raw_messages(
         self,
-        system_prompt: str,
+        system_prompt: str | None,
         user_prompt: str,
         media: list[LlmMedium],
     ) -> list[ChatCompletionMessageParam]:
-        system_message = {"role": "system", "content": system_prompt}
+        messages = []
+        if system_prompt is not None:
+            system_message = {"role": "system", "content": system_prompt}
+            messages.append(system_message)
 
         user_message_content: list[dict] = [{"type": "text", "text": user_prompt}]
         user_message_content.extend(
             self._assemble_image_url(medium) for medium in media
         )
         user_message = {"role": "user", "content": user_message_content}
+        messages.append(user_message)
 
-        messages = cast(
-            list[ChatCompletionMessageParam], [system_message, user_message]
-        )
+        messages = cast(list[ChatCompletionMessageParam], messages)
 
         return messages

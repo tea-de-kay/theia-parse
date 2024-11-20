@@ -34,7 +34,7 @@ class LlmUsage(BaseModel):
             request_tokens=request_tokens,
             response_tokens=response_tokens,
             total_tokens=total_tokens,
-            model=self.model,
+            model=self.model or other.model,
         )
 
     def __iadd__(self, other: LlmUsage) -> LlmUsage:
@@ -42,6 +42,7 @@ class LlmUsage(BaseModel):
         self.request_tokens = _sum.request_tokens
         self.response_tokens = _sum.response_tokens
         self.total_tokens = _sum.total_tokens
+        self.model = _sum.model
 
         return self
 
