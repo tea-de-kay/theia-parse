@@ -9,6 +9,10 @@ from pydantic import BaseModel, computed_field
 
 from theia_parse.types import ImageFormat
 from theia_parse.util.image import image_to_bytes
+from theia_parse.util.log import LogFactory
+
+
+_log = LogFactory.get_logger()
 
 
 class LlmUsage(BaseModel):
@@ -16,6 +20,35 @@ class LlmUsage(BaseModel):
     response_tokens: int | None = None
     total_tokens: int | None = None
     model: str | None = None
+
+    def __add__(self, other: LlmUsage) -> LlmUsage:
+        request_tokens = None
+        if self.request_tokens is not None or other.request_tokens is not None:
+            request_tokens = (self.request_tokens or 0) + (other.request_tokens or 0)
+
+        response_tokens = None
+        if self.response_tokens is not None or other.response_tokens is not None:
+            request_tokens = (self.response_tokens or 0) + (other.response_tokens or 0)
+
+        total_tokens = None
+        if self.total_tokens is not None or other.total_tokens is not None:
+            request_tokens = (self.total_tokens or 0) + (other.total_tokens or 0)
+
+        return LlmUsage(
+            request_tokens=request_tokens,
+            response_tokens=response_tokens,
+            total_tokens=total_tokens,
+            model=self.model or other.model,
+        )
+
+    def __iadd__(self, other: LlmUsage) -> LlmUsage:
+        _sum = self + other
+        self.request_tokens = _sum.request_tokens
+        self.response_tokens = _sum.response_tokens
+        self.total_tokens = _sum.total_tokens
+        self.model = _sum.model
+
+        return self
 
 
 class ContentType(StrEnum):
@@ -42,9 +75,15 @@ class RawContentElement(BaseModel):
 
         if self.type == ContentType.IMAGE:
             medium_id = None
-            if img_nr_to_id is not None:
-                assert self.image_number is not None
-                medium_id = img_nr_to_id[self.image_number]
+            if img_nr_to_id is not None and self.image_number is not None:
+                medium_id = img_nr_to_id.get(self.image_number)
+                if medium_id is None:
+                    _log.warning(
+                        "Medium could not be matched to embedded image "
+                        "[img_nr_to_id={}, image_nr={}]",
+                        img_nr_to_id,
+                        self.image_number,
+                    )
 
             return ImageElement(content=self.content, medium_id=medium_id)
 

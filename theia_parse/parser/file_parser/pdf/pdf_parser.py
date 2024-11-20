@@ -3,6 +3,7 @@ from collections.abc import Iterable
 from pathlib import Path
 from typing import Any, Deque
 
+import pdf2image
 import pdfplumber
 from pdfplumber.page import Page as PdfPage
 
@@ -17,6 +18,9 @@ from theia_parse.llm.__spi__ import (
 from theia_parse.llm.prompt_templates import (
     PDF_EXTRACT_CONTENT_SYSTEM_PROMPT_TEMPLATE,
     PDF_EXTRACT_CONTENT_USER_PROMPT_TEMPLATE,
+    PDF_IMPROVE_SYSTEM_PROMPT_TEMPLATE,
+    PDF_IMPROVE_USER_PROMPT_TEMPLATE,
+    PDF_USER_PARSE_RAW,
 )
 from theia_parse.llm.response_parser.json_parser import JsonParser
 from theia_parse.model import (
@@ -24,6 +28,7 @@ from theia_parse.model import (
     DocumentPage,
     HeadingElement,
     ImageElement,
+    LlmUsage,
     Medium,
     ParsedDocument,
     RawContentElement,
@@ -37,17 +42,19 @@ from theia_parse.util.files import get_md5_sum
 from theia_parse.util.log import LogFactory
 
 
-IMAGE_NUMBER_PATTERN = r"\s*image_number\s*=\s*(\d+)\s*(.*)"
-
-
 _log = LogFactory.get_logger()
 
 
 class PdfParser(FileParser):
     def __init__(self, llm_api_settings: LlmApiSettings) -> None:
         super().__init__(llm_api_settings)
-        self._system_prompt = Prompt(PDF_EXTRACT_CONTENT_SYSTEM_PROMPT_TEMPLATE)
-        self._user_prompt = Prompt(PDF_EXTRACT_CONTENT_USER_PROMPT_TEMPLATE)
+        self._system_prompt_extraction = Prompt(
+            PDF_EXTRACT_CONTENT_SYSTEM_PROMPT_TEMPLATE
+        )
+        self._user_prompt_extraction = Prompt(PDF_EXTRACT_CONTENT_USER_PROMPT_TEMPLATE)
+        self._system_prompt_improve = Prompt(PDF_IMPROVE_SYSTEM_PROMPT_TEMPLATE)
+        self._user_prompt_improve = Prompt(PDF_IMPROVE_USER_PROMPT_TEMPLATE)
+        self._user_prompt_parse_raw = Prompt(PDF_USER_PARSE_RAW)
         self._json_parser = JsonParser()
 
     def parse(self, path: Path, config: DocumentParserConfig) -> ParsedDocument:
@@ -72,7 +79,9 @@ class PdfParser(FileParser):
 
         with pdfplumber.open(path) as pdf:
             for page in pdf.pages:
-                parsed_page = self._parse_page(page, headings, parsed_pages, config)
+                parsed_page = self._parse_page(
+                    path, page, headings, parsed_pages, config
+                )
                 if parsed_page is not None:
                     headings.extend(parsed_page.get_headings())
                     parsed_pages.append(parsed_page)
@@ -82,15 +91,18 @@ class PdfParser(FileParser):
 
     def _parse_page(
         self,
+        path: Path,
         page: PdfPage,
         headings: Deque[HeadingElement],
         parsed_pages: Deque[DocumentPage],
         config: DocumentParserConfig,
     ) -> DocumentPage | None:
-        page_image, embedded_images = self._get_images(page, config)
+        page_image, embedded_images = self._get_images(path, page, config)
 
-        # TODO: use better parser
-        raw_extracted_text = page.extract_text()
+        usage = LlmUsage()
+
+        raw_extracted_text, raw_usage = self._parse_raw(page, page_image, config)
+        usage += raw_usage
 
         response = self._call_llm(
             config=config,
@@ -104,6 +116,19 @@ class PdfParser(FileParser):
         )
         if response is None:
             return
+
+        usage += response.usage
+
+        if config.post_improve:
+            improved = self._improve_parsed(
+                config=config,
+                raw_parsed=response.raw,
+                raw_extracted_text=raw_extracted_text,
+                page_image=page_image,
+            )
+            if improved is not None:
+                usage += improved.usage
+                response = improved
 
         parsed_response = self._json_parser.parse(response.raw)
         if parsed_response is None:
@@ -123,7 +148,7 @@ class PdfParser(FileParser):
             media=media,
             raw_llm_response=response.raw,
             raw_extracted_text=raw_extracted_text,
-            token_usage=response.usage,
+            token_usage=usage,
             error=error,
         )
 
@@ -154,19 +179,20 @@ class PdfParser(FileParser):
         page_image: Medium | None,
         embedded_images: list[Medium],
     ) -> LlmResponse | None:
-        prompt_config = config.prompt_config
         image_config = config.image_extraction_config
 
         prompt_additions = PromptAdditions.create(
-            config=prompt_config,
+            config=config,
             raw_extracted_text=raw_extracted_text,
             previous_headings=headings,
             previous_parsed_pages=parsed_pages,
             embedded_images=embedded_images,
         )
 
-        system_prompt = self._system_prompt.render(prompt_additions.to_dict())
-        user_prompt = self._user_prompt.render(prompt_additions.to_dict())
+        system_prompt = self._system_prompt_extraction.render(
+            prompt_additions.to_dict()
+        )
+        user_prompt = self._user_prompt_extraction.render(prompt_additions.to_dict())
         images = [
             LlmMedium(
                 image=img,
@@ -176,6 +202,33 @@ class PdfParser(FileParser):
         ]
         if page_image is not None:
             images = [LlmMedium(image=page_image)] + images
+
+        return self._llm.generate(
+            system_prompt=system_prompt,
+            user_prompt=user_prompt,
+            media=images,
+            config=LlmGenerationConfig(),
+        )
+
+    def _improve_parsed(
+        self,
+        config: DocumentParserConfig,
+        raw_parsed: str,
+        raw_extracted_text: str,
+        page_image: Medium | None,
+    ) -> LlmResponse | None:
+        prompt_additions = PromptAdditions.create(
+            config=config,
+            raw_extracted_text=raw_extracted_text,
+            raw_parsed=raw_parsed,
+        )
+
+        system_prompt = self._system_prompt_improve.render(prompt_additions.to_dict())
+        user_prompt = self._user_prompt_improve.render(prompt_additions.to_dict())
+        images = []
+        if page_image is not None:
+            # TODO: improve based on multiple image tiles for more details
+            images = [LlmMedium(image=page_image)]
 
         return self._llm.generate(
             system_prompt=system_prompt,
@@ -226,6 +279,7 @@ class PdfParser(FileParser):
 
     def _get_images(
         self,
+        path: Path,
         page: PdfPage,
         config: DocumentParserConfig,
     ) -> tuple[Medium | None, list[EmbeddedPdfPageImage]]:
@@ -236,7 +290,12 @@ class PdfParser(FileParser):
         full_page_image = Medium.create_from_image(
             id="",
             image_format=image_config.image_format,
-            raw=page.to_image(resolution=image_config.resolution).original,
+            raw=pdf2image.convert_from_path(
+                path,
+                dpi=image_config.resolution,
+                first_page=page.page_number,
+                last_page=page.page_number,
+            )[0],
         )
 
         if not image_config.extract_images:
@@ -274,4 +333,39 @@ class PdfParser(FileParser):
         embedded_images = sorted(embedded_images, key=lambda x: x.size, reverse=True)
         embedded_images = embedded_images[: config.max_images_per_page]
 
+        for caption_idx, ei in enumerate(embedded_images, start=1):
+            ei.caption_idx = caption_idx
+
         return embedded_images
+
+    def _parse_raw(
+        self,
+        page: PdfPage,
+        page_image: Medium | None,
+        config: DocumentParserConfig,
+    ) -> tuple[str, LlmUsage]:
+        raw = page.extract_text()
+        usage = LlmUsage()
+        if config.raw_parser_config.parser_type == "llm":
+            prompt_additions = PromptAdditions.create(
+                config=config,
+                raw_extracted_text=raw,
+            )
+
+            user_prompt = self._user_prompt_parse_raw.render(prompt_additions.to_dict())
+            images = []
+            if page_image is not None and config.raw_parser_config.llm_use_vision:
+                images = [LlmMedium(image=page_image)]
+
+            response = self._llm.generate(
+                system_prompt=None,
+                user_prompt=user_prompt,
+                media=images,
+                config=LlmGenerationConfig(json_mode=False),
+            )
+
+            if response is not None:
+                raw = response.raw
+                usage = response.usage
+
+        return raw, usage
