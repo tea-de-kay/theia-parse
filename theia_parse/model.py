@@ -28,11 +28,11 @@ class LlmUsage(BaseModel):
 
         response_tokens = None
         if self.response_tokens is not None or other.response_tokens is not None:
-            request_tokens = (self.response_tokens or 0) + (other.response_tokens or 0)
+            response_tokens = (self.response_tokens or 0) + (other.response_tokens or 0)
 
         total_tokens = None
         if self.total_tokens is not None or other.total_tokens is not None:
-            request_tokens = (self.total_tokens or 0) + (other.total_tokens or 0)
+            total_tokens = (self.total_tokens or 0) + (other.total_tokens or 0)
 
         return LlmUsage(
             request_tokens=request_tokens,
