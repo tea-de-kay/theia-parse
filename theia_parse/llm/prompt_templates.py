@@ -52,7 +52,7 @@ Your task is to analyze the provided inputs and transform the content of the PDF
 - content: Document structure outline (headings and page numbers).
 
 ### type = 'image'
-- content: Concise description of the image if relevant, excluding logos or decorative elements. For diagrams, include the numeric data and a detailed description of the diagram. Use the same language as page text.
+- content: Concise description of the image if relevant, excluding logos or decorative elements. For diagrams, include the numeric data and a detailed description of the diagram. Use the same language as page text. If the image only contains text or a table, create an appropriate content block.
 - image_number: Reference the image_number from the enumerated embedded images, if provided.
 
 
@@ -61,10 +61,10 @@ Your task is to analyze the provided inputs and transform the content of the PDF
 * Content inclusion: Include all provided text and represent the page comprehensively through structured blocks.
 * Reading order: Follow the natural reading sequence based on typical page layouts (top-to-bottom, left-to-right, single/multi columns).
 {% if previous_parsed_pages or previous_headings %}
-* Contextual Consistency: Leverage previous parsed headings and content for maintaining consistency across pages.
+* Contextual consistency: Leverage previous parsed headings and content for maintaining consistency across pages.
 {% endif %}
 * Text formatting: Use Markdown formatting for text and tables wherever applicable.
-* Image analysis: For images, focus on diagrams or data-centric visuals. Exclude decorative elements.
+* Image analysis: For images, focus on sketches, diagrams and data-centric visuals. Exclude decorative elements text- or table-only images.
 {% if custom_instructions %}
 {% for instruction in custom_instructions %}
 * {{ instruction }}
@@ -74,15 +74,15 @@ Your task is to analyze the provided inputs and transform the content of the PDF
 
 # Output format
 
-Return a single JSON object in this schema:
+Return a single JSON object following this schema:
 ```
 {
   'page_content_blocks': [
     {
-      'type': 'heading | text | table | footer | table-of-contents | image',
-      'content': 'The content as Markdown text following the task and instructions',
-      'heading_level': null | 1, 2, ...,
-      'image_number': null | 1, 2, ...
+      'type': string, // heading | text | table | footer | table-of-contents | image,
+      'content': string // The content as Markdown text following the task and instructions,
+      'heading_level': int | null, // null | 1, 2, ...,
+      'image_number': int | null // null | 1, 2, ...
     },
     ...
   ]
