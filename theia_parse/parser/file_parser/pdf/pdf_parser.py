@@ -1,11 +1,15 @@
+import os
 from collections import deque
 from collections.abc import Iterable
 from pathlib import Path
-from typing import Any, Deque
+from tempfile import TemporaryDirectory
+from typing import Any
 
 import pdf2image
 import pdfplumber
+import pymupdf4llm
 from pdfplumber.page import Page as PdfPage
+from PIL import Image
 
 from theia_parse.llm.__spi__ import (
     LlmApiSettings,
@@ -70,10 +74,10 @@ class PdfParser(FileParser):
         path: Path,
         config: DocumentParserConfig,
     ) -> Iterable[DocumentPage | None]:
-        headings: Deque[HeadingElement] = deque(
+        headings: deque[HeadingElement] = deque(
             maxlen=config.prompt_config.consider_last_headings_n
         )
-        parsed_pages: Deque[DocumentPage] = deque(
+        parsed_pages: deque[DocumentPage] = deque(
             maxlen=config.prompt_config.consider_last_parsed_pages_n
         )
 
@@ -93,8 +97,8 @@ class PdfParser(FileParser):
         self,
         path: Path,
         page: PdfPage,
-        headings: Deque[HeadingElement],
-        parsed_pages: Deque[DocumentPage],
+        headings: deque[HeadingElement],
+        parsed_pages: deque[DocumentPage],
         config: DocumentParserConfig,
     ) -> DocumentPage | None:
         page_image, embedded_images = self._get_images(path, page, config)
@@ -174,8 +178,8 @@ class PdfParser(FileParser):
         self,
         config: DocumentParserConfig,
         raw_extracted_text: str,
-        headings: Deque[HeadingElement],
-        parsed_pages: Deque[DocumentPage],
+        headings: deque[HeadingElement],
+        parsed_pages: deque[DocumentPage],
         page_image: Medium | None,
         embedded_images: list[Medium],
     ) -> LlmResponse | None:
@@ -301,34 +305,43 @@ class PdfParser(FileParser):
         if not image_config.extract_images:
             return full_page_image, []
 
-        embedded_images = self._get_embedded_images(page, image_config)
+        embedded_images = self._get_embedded_images(path, page, image_config)
 
         return full_page_image, embedded_images
 
     @staticmethod
     def _get_embedded_images(
-        page: PdfPage, config: ImageExtractionConfig
+        path: Path, page: PdfPage, config: ImageExtractionConfig
     ) -> list[EmbeddedPdfPageImage]:
         embedded_images: list[EmbeddedPdfPageImage] = []
         caption_idx = 1
-        for img_spec in page.images:
-            img = EmbeddedPdfPageImage(
-                page=page,
-                image_spec=img_spec,
-                caption_idx=caption_idx,
-                config=config,
-            )
-            if img.is_relevant:
-                embedded_images.append(img)
-                caption_idx += 1
 
-        if config.exclude_fully_contained:
-            filtered = []
-            for ei in embedded_images:
-                checks = [check for check in embedded_images if check is not ei]
-                if not any(ei.is_contained(check) for check in checks):
-                    filtered.append(ei)
-            embedded_images = filtered
+        with TemporaryDirectory() as temp_dir:
+            # TODO: use markdown
+            pymupdf4llm.to_markdown(
+                path,
+                pages=[page.page_number - 1],  # pdfplumber 1-based, pymupdf 0-based
+                write_images=True,
+                image_path=temp_dir,
+                table_strategy="",
+            )
+
+            for filename in os.listdir(temp_dir):
+                image_path = os.path.join(temp_dir, filename)
+                try:
+                    raw_img = Image.open(image_path)
+                except Exception as e:
+                    _log.warning("Failed to load image {}: {}", filename, e)
+                else:
+                    img = EmbeddedPdfPageImage(
+                        page=page,
+                        raw_image=raw_img,
+                        caption_idx=caption_idx,
+                        config=config,
+                    )
+                    if img.is_relevant:
+                        embedded_images.append(img)
+                        caption_idx += 1
 
         embedded_images = sorted(embedded_images, key=lambda x: x.size, reverse=True)
         embedded_images = embedded_images[: config.max_images_per_page]

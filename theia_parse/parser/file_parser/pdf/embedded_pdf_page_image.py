@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import hashlib
 from functools import cached_property
-from typing import Any
 from uuid import NAMESPACE_OID, uuid5
 
 from pdfplumber.page import Page as PdfPage
@@ -17,12 +16,12 @@ class EmbeddedPdfPageImage:
     def __init__(
         self,
         page: PdfPage,
-        image_spec: dict[str, Any],
+        raw_image: Image,
         caption_idx: int,
         config: ImageExtractionConfig,
     ) -> None:
         self._page = page
-        self._img_spec = image_spec
+        self._raw_image = raw_image
         self._config = config
         self._caption_idx = caption_idx
 
@@ -34,12 +33,9 @@ class EmbeddedPdfPageImage:
     def caption_idx(self, value: int) -> None:
         self._caption_idx = value
 
-    @cached_property
+    @property
     def raw_image(self) -> Image:
-        crop = self._page.within_bbox(self.bbox, strict=False)
-        image = crop.to_image(resolution=self._config.resolution).original
-
-        return image
+        return self._raw_image
 
     @cached_property
     def id(self) -> str:
@@ -48,21 +44,12 @@ class EmbeddedPdfPageImage:
         return str(uuid5(NAMESPACE_OID, digest))
 
     @property
-    def bbox(self) -> tuple[float, float, float, float]:
-        return (
-            self._img_spec["x0"],
-            self._img_spec["top"],
-            self._img_spec["x1"],
-            self._img_spec["bottom"],
-        )
-
-    @property
     def width(self) -> float:
-        return self._img_spec["x1"] - self._img_spec["x0"]
+        return self.raw_image.width
 
     @property
     def height(self) -> float:
-        return self._img_spec["bottom"] - self._img_spec["top"]
+        return self.raw_image.height
 
     @property
     def size(self) -> float:
@@ -81,17 +68,6 @@ class EmbeddedPdfPageImage:
             return False
 
         return True
-
-    def is_contained(self, image: EmbeddedPdfPageImage) -> bool:
-        image_x0, image_top, image_x1, image_bottom = image.bbox
-        self_x0, self_top, self_x1, self_bottom = self.bbox
-
-        return (
-            image_x0 >= self_x0
-            and image_top >= self_top
-            and image_x1 <= self_x1
-            and image_bottom <= self_bottom
-        )
 
     def is_smaller_than(self, size: ImageSize) -> bool:
         size = size.to_absolute(
