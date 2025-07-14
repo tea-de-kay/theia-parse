@@ -1,7 +1,7 @@
 from collections import deque
 from collections.abc import Iterable
 from pathlib import Path
-from typing import Any, Deque
+from typing import Any
 
 import pdf2image
 import pdfplumber
@@ -70,10 +70,10 @@ class PdfParser(FileParser):
         path: Path,
         config: DocumentParserConfig,
     ) -> Iterable[DocumentPage | None]:
-        headings: Deque[HeadingElement] = deque(
+        headings: deque[HeadingElement] = deque(
             maxlen=config.prompt_config.consider_last_headings_n
         )
-        parsed_pages: Deque[DocumentPage] = deque(
+        parsed_pages: deque[DocumentPage] = deque(
             maxlen=config.prompt_config.consider_last_parsed_pages_n
         )
 
@@ -93,8 +93,8 @@ class PdfParser(FileParser):
         self,
         path: Path,
         page: PdfPage,
-        headings: Deque[HeadingElement],
-        parsed_pages: Deque[DocumentPage],
+        headings: deque[HeadingElement],
+        parsed_pages: deque[DocumentPage],
         config: DocumentParserConfig,
     ) -> DocumentPage | None:
         page_image, embedded_images = self._get_images(path, page, config)
@@ -174,8 +174,8 @@ class PdfParser(FileParser):
         self,
         config: DocumentParserConfig,
         raw_extracted_text: str,
-        headings: Deque[HeadingElement],
-        parsed_pages: Deque[DocumentPage],
+        headings: deque[HeadingElement],
+        parsed_pages: deque[DocumentPage],
         page_image: Medium | None,
         embedded_images: list[Medium],
     ) -> LlmResponse | None:
