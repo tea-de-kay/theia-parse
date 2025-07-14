@@ -52,7 +52,7 @@ Your task is to analyze the provided inputs and transform the content of the PDF
 - content: Document structure outline (headings and page numbers).
 
 ### type = 'image'
-- content: Concise description of the image if relevant, excluding logos or decorative elements. For diagrams, include the numeric data and a detailed description of the diagram. Use the same language as page text. If the image only contains text or a table, create an appropriate content block.
+- content: Detailed description of the image if relevant, excluding logos or decorative elements. For diagrams, include the numeric data and a detailed description of the diagram. Use the same language as the main page text. If the image only contains text or a table, create an appropriate content block of the respective type.
 - image_number: Reference the image_number from the enumerated embedded images, if provided.
 
 
@@ -64,7 +64,7 @@ Your task is to analyze the provided inputs and transform the content of the PDF
 * Contextual consistency: Leverage previous parsed headings and content for maintaining consistency across pages.
 {% endif %}
 * Text formatting: Use Markdown formatting for text and tables wherever applicable.
-* Image analysis: For images, focus on sketches, diagrams and data-centric visuals. Exclude decorative elements text- or table-only images.
+* Image analysis: Include all relevant images like photos, sketches and diagrams. Exclude logos, decorative elements and text- or table-only images.
 {% if custom_instructions %}
 {% for instruction in custom_instructions %}
 * {{ instruction }}
