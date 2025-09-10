@@ -45,7 +45,8 @@ class PymupdfImageExtractor(ImageExtractor):
                         caption_idx=caption_idx,
                         config=self._config,
                     )
-                    if img.is_relevant:
+                    # TODO: check resolution
+                    if img.is_relevant():
                         embedded_images.append(img)
                         caption_idx += 1
 

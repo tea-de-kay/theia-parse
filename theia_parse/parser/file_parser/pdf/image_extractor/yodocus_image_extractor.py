@@ -1,5 +1,6 @@
 from pathlib import Path
 
+from pdfplumber.display import DEFAULT_RESOLUTION
 from pdfplumber.page import Page
 from yodocus import (
     DetectionConfig,
@@ -34,7 +35,9 @@ class YodocusImageExtractor(ImageExtractor):
             x1 = box.x1 + 10
             bottom = box.y1 + 10
             raw_image = (
-                page.crop((x0, top, x1, bottom), strict=False).to_image().original
+                page.crop((x0, top, x1, bottom), strict=False)
+                .to_image(self._config.resolution)
+                .original
             )
             img = EmbeddedPdfPageImage(
                 page=page,
@@ -42,10 +45,11 @@ class YodocusImageExtractor(ImageExtractor):
                 caption_idx=caption_idx,
                 config=self._config,
             )
-            if img.is_relevant:
+            if img.is_relevant(self._config.resolution):
                 embedded_images.append(img)
                 caption_idx += 1
 
+        print(len(embedded_images))
         embedded_images = sorted(embedded_images, key=lambda x: x.size, reverse=True)
         embedded_images = embedded_images[: self._config.max_images_per_page]
 

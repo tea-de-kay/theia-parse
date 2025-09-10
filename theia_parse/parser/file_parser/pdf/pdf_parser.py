@@ -93,6 +93,8 @@ class PdfParser(FileParser):
         path: Path,
         config: DocumentParserConfig,
     ) -> Iterable[DocumentPage | None]:
+        self._init_parse(config)
+
         headings: deque[HeadingElement] = deque(
             maxlen=config.prompt_config.consider_last_headings_n
         )

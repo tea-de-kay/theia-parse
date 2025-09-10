@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from pdfplumber.display import DEFAULT_RESOLUTION
 from pydantic import BaseModel
 
 from theia_parse.types import ImageExtractionMethod, ImageFormat, RawParserTypeName
@@ -17,14 +18,20 @@ class ImageSize(BaseModel):
     width: T_num
     height: T_num
 
-    def to_absolute(self, total_width: T_num, total_height: T_num) -> ImageSize:
+    def to_absolute(
+        self,
+        total_width: T_num,
+        total_height: T_num,
+        resolution: int | None,
+    ) -> ImageSize:
+        scale = resolution / DEFAULT_RESOLUTION if resolution is not None else 1
         width = self.width
         if isinstance(self.width, float):
-            width = int(self.width * total_width)
+            width = int(self.width * total_width * scale)
 
         height = self.height
         if isinstance(self.height, float):
-            height = int(self.height * total_height)
+            height = int(self.height * total_height * scale)
 
         return ImageSize(width=width, height=height)
 
