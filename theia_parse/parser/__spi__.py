@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from pydantic import BaseModel
 
-from theia_parse.types import ImageFormat, RawParserTypeName
+from theia_parse.types import ImageExtractionMethod, ImageFormat, RawParserTypeName
 
 
 T_num = int | float
@@ -31,6 +31,10 @@ class ImageSize(BaseModel):
 
 class ImageExtractionConfig(BaseModel):
     extract_images: bool = True
+
+    method: ImageExtractionMethod = "yodocus"
+    yodocus_model: str = "yodocus-picture-detection-nano-v1"
+
     min_size: ImageSize | None = ImageSize(width=20, height=20)
     max_size: ImageSize | None = ImageSize(width=0.9, height=0.9)
 

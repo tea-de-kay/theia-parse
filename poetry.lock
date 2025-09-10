@@ -2170,7 +2170,7 @@ dev = ["black (>=19.3b0)", "pytest (>=4.6.2)"]
 
 [[package]]
 name = "yodocus"
-version = "0.1.0"
+version = "0.1.1"
 description = "Document Layout Analysis with YOLO"
 optional = true
 python-versions = "~=3.12"
@@ -2186,14 +2186,14 @@ PyYAML = "6.*"
 [package.source]
 type = "git"
 url = "https://github.com/tea-de-kay/yodocus.git"
-reference = "0.1.0"
-resolved_reference = "c5477db9d36410dc5d8ce609ba0f2c91050f2470"
+reference = "0.1.1"
+resolved_reference = "3a08e9bcd5a3dbf6b13650c4e0cbc97054e058b0"
 
 [extras]
-convetional = ["pymupdf4llm"]
+pymupdf = ["pymupdf4llm"]
 yodocus = ["yodocus"]
 
 [metadata]
 lock-version = "2.0"
 python-versions = "~=3.12.0"
-content-hash = "5bebc25560cecbbbf9c21768aeed834e1aabd4e164bf5e6690385ca7de6077f4"
+content-hash = "c01a25ffecf658bdfaa1904a94b84a731b326971f1efd8910848865ab621ce28"
