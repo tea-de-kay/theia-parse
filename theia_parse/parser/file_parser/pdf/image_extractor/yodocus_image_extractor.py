@@ -20,7 +20,11 @@ class YodocusImageExtractor(ImageExtractor):
     def __init__(self, config: ImageExtractionConfig) -> None:
         super().__init__(config)
         self._detector = Detector(config.yodocus_model)
-        self._yodocus_config = DetectionConfig(visualize=False)
+        self._yodocus_config = DetectionConfig(
+            conf_threshold=config.yodocus_conf_threshold,
+            iou_threshold=config.yodocus_iou_threshold,
+            visualize=False,
+        )
         self._processor = HeuristicPostprocessor(config=PostprocessorConfig())
 
     def extract(self, path: Path, page: Page) -> list[EmbeddedPdfPageImage]:
