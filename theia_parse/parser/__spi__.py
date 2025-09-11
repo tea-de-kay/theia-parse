@@ -43,6 +43,7 @@ class ImageExtractionConfig(BaseModel):
     yodocus_model: str = "yodocus-picture-detection-nano-v1"
     yodocus_conf_threshold: float = 0.25
     yodocus_iou_threshold: float = 0.45
+    yodocus_postprocessor_containment_threshold: float = 0.9
 
     min_size: ImageSize | None = ImageSize(width=20, height=20)
     max_size: ImageSize | None = ImageSize(width=0.9, height=0.9)

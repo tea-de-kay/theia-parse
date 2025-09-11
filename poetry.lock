@@ -1134,13 +1134,13 @@ sympy = "*"
 
 [[package]]
 name = "openai"
-version = "1.107.0"
+version = "1.107.1"
 description = "The official Python library for the openai API"
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "openai-1.107.0-py3-none-any.whl", hash = "sha256:3dcfa3cbb116bd6924b27913b8da28c4a787379ff60049588547a1013e6d6438"},
-    {file = "openai-1.107.0.tar.gz", hash = "sha256:43e04927584e57d0e9e640ee0077c78baf8150098be96ebd5c512539b6c4e9a4"},
+    {file = "openai-1.107.1-py3-none-any.whl", hash = "sha256:168f9885b1b70d13ada0868a0d0adfd538c16a02f7fd9fe063851a2c9a025e72"},
+    {file = "openai-1.107.1.tar.gz", hash = "sha256:7c51b6b8adadfcf5cada08a613423575258b180af5ad4bc2954b36ebc0d3ad48"},
 ]
 
 [package.dependencies]
@@ -2170,7 +2170,7 @@ dev = ["black (>=19.3b0)", "pytest (>=4.6.2)"]
 
 [[package]]
 name = "yodocus"
-version = "0.1.1"
+version = "0.1.2"
 description = "Document Layout Analysis with YOLO"
 optional = true
 python-versions = "~=3.12"
@@ -2186,8 +2186,8 @@ PyYAML = "6.*"
 [package.source]
 type = "git"
 url = "https://github.com/tea-de-kay/yodocus.git"
-reference = "0.1.1"
-resolved_reference = "3a08e9bcd5a3dbf6b13650c4e0cbc97054e058b0"
+reference = "0.1.2"
+resolved_reference = "d5256aca3467d9c3b05eb1e3825fd8b9d65164b9"
 
 [extras]
 pymupdf = ["pymupdf4llm"]
@@ -2196,4 +2196,4 @@ yodocus = ["yodocus"]
 [metadata]
 lock-version = "2.0"
 python-versions = "~=3.12.0"
-content-hash = "c01a25ffecf658bdfaa1904a94b84a731b326971f1efd8910848865ab621ce28"
+content-hash = "2fffd4665b9df2c5519ba9752e35e6159d8591d5f88a7f2dea4a7c73910e6c00"

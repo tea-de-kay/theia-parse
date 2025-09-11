@@ -25,7 +25,11 @@ class YodocusImageExtractor(ImageExtractor):
             iou_threshold=config.yodocus_iou_threshold,
             visualize=False,
         )
-        self._processor = HeuristicPostprocessor(config=PostprocessorConfig())
+        self._processor = HeuristicPostprocessor(
+            config=PostprocessorConfig(
+                containment_thresh=config.yodocus_postprocessor_containment_threshold
+            )
+        )
 
     def extract(self, path: Path, page: Page) -> list[EmbeddedPdfPageImage]:
         result = self._detector.detect(page.to_image().original, self._yodocus_config)
