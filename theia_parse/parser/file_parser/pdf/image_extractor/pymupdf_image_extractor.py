@@ -6,7 +6,6 @@ import pymupdf4llm
 from pdfplumber.page import Page
 from PIL import Image
 
-from theia_parse.parser.__spi__ import ImageExtractionConfig
 from theia_parse.parser.file_parser.pdf.embedded_pdf_page_image import (
     EmbeddedPdfPageImage,
 )

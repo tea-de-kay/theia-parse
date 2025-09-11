@@ -26,12 +26,19 @@ class YodocusImageExtractor(ImageExtractor):
         )
         self._processor = HeuristicPostprocessor(
             config=PostprocessorConfig(
-                containment_thresh=config.yodocus_postprocessor_containment_threshold
+                containment_threshold=config.yodocus_postprocessor_containment_threshold
             )
         )
 
     def extract(self, path: Path, page: Page) -> list[EmbeddedPdfPageImage]:
-        result = self._detector.detect(page.to_image().original, self._yodocus_config)
+        if page.height < page.width and page.height < self._detector.input_height:
+            input_image = page.to_image(height=self._detector.input_height)
+        elif page.width < self._detector.input_width:
+            input_image = page.to_image(width=self._detector.input_width)
+        else:
+            input_image = page.to_image()
+
+        result = self._detector.detect(input_image.original, self._yodocus_config)
         result = self._processor.process(result, original_image=None)
 
         embedded_images: list[EmbeddedPdfPageImage] = []
