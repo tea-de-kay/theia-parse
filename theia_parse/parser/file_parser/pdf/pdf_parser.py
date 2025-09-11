@@ -136,7 +136,10 @@ class PdfParser(FileParser):
             parsed_pages=parsed_pages,
             page_image=page_image,
             embedded_images=[
-                img.to_medium(with_caption=True) for img in embedded_images
+                img.to_medium(
+                    with_caption=False, description=f"image_number = {img.caption_idx}:"
+                )
+                for img in embedded_images
             ],
         )
         if response is None:
@@ -222,16 +225,20 @@ class PdfParser(FileParser):
             LlmMedium(
                 image=img,
                 detail_level="low" if image_config.use_low_details else "auto",
+                description=img.description,
             )
             for img in embedded_images
         ]
-        if page_image is not None:
-            images = [LlmMedium(image=page_image)] + images
 
         return self._llm.generate(
             system_prompt=system_prompt,
             user_prompt=user_prompt,
-            media=images,
+            page_image=(
+                LlmMedium(image=page_image, description=page_image.description)
+                if page_image is not None
+                else None
+            ),
+            embedded_images=images,
             config=LlmGenerationConfig(),
         )
 
@@ -250,15 +257,16 @@ class PdfParser(FileParser):
 
         system_prompt = self._system_prompt_improve.render(prompt_additions.to_dict())
         user_prompt = self._user_prompt_improve.render(prompt_additions.to_dict())
-        images = []
-        if page_image is not None:
-            # TODO: improve based on multiple image tiles for more details
-            images = [LlmMedium(image=page_image)]
 
         return self._llm.generate(
             system_prompt=system_prompt,
             user_prompt=user_prompt,
-            media=images,
+            page_image=(
+                LlmMedium(image=page_image, description=page_image.description)
+                if page_image is not None
+                else None
+            ),
+            embedded_images=[],
             config=LlmGenerationConfig(),
         )
 
@@ -320,6 +328,7 @@ class PdfParser(FileParser):
                 first_page=page.page_number,
                 last_page=page.page_number,
             )[0],
+            description="Image of the full PDF page:",
         )
 
         if not image_config.extract_images:
@@ -344,14 +353,16 @@ class PdfParser(FileParser):
             )
 
             user_prompt = self._user_prompt_parse_raw.render(prompt_additions.to_dict())
-            images = []
-            if page_image is not None and config.raw_parser_config.llm_use_vision:
-                images = [LlmMedium(image=page_image)]
 
             response = self._llm.generate(
                 system_prompt=None,
                 user_prompt=user_prompt,
-                media=images,
+                page_image=(
+                    LlmMedium(image=page_image, description=page_image.description)
+                    if page_image is not None
+                    else None
+                ),
+                embedded_images=[],
                 config=LlmGenerationConfig(json_mode=False),
             )
 
