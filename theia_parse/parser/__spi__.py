@@ -41,7 +41,8 @@ class ImageExtractionConfig(BaseModel):
 
     method: ImageExtractionMethod = "yodocus"
 
-    yodocus_model: str = "yodocus-picture-detection-nano-v1"
+    yodocus_model: str = "tea-de-kay/yodocus-picture-detection-nano-v1"
+    """Path to model directory or huggingface hub model identifier."""
     yodocus_conf_threshold: float = 0.25
     yodocus_iou_threshold: float = 0.45
     yodocus_postprocessor_containment_threshold: float = 0.9
