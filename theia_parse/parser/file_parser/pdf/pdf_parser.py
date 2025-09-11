@@ -136,9 +136,7 @@ class PdfParser(FileParser):
             parsed_pages=parsed_pages,
             page_image=page_image,
             embedded_images=[
-                img.to_medium(
-                    with_caption=False, description=f"image_number = {img.caption_idx}:"
-                )
+                img.to_medium(description=f"image_number = {img.caption_idx}:")
                 for img in embedded_images
             ],
         )
