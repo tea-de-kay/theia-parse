@@ -33,10 +33,13 @@ class YodocusImageExtractor(ImageExtractor):
     def extract(self, path: Path, page: Page) -> list[EmbeddedPdfPageImage]:
         if page.height < page.width and page.height < self._detector.input_height:
             input_image = page.to_image(height=self._detector.input_height)
+            scale = self._detector.input_height / page.height
         elif page.width < self._detector.input_width:
             input_image = page.to_image(width=self._detector.input_width)
+            scale = self._detector.input_width / page.width
         else:
             input_image = page.to_image()
+            scale = 1
 
         result = self._detector.detect(input_image.original, self._yodocus_config)
         result = self._processor.process(result, original_image=None)
@@ -44,10 +47,10 @@ class YodocusImageExtractor(ImageExtractor):
         embedded_images: list[EmbeddedPdfPageImage] = []
         caption_idx = 1
         for box in result.boxes:
-            x0 = box.x0 - self._config.yodocus_additional_margin
-            top = box.y0 - self._config.yodocus_additional_margin
-            x1 = box.x1 + self._config.yodocus_additional_margin
-            bottom = box.y1 + self._config.yodocus_additional_margin
+            x0 = box.x0 / scale - self._config.yodocus_additional_margin
+            top = box.y0 / scale - self._config.yodocus_additional_margin
+            x1 = box.x1 / scale + self._config.yodocus_additional_margin
+            bottom = box.y1 / scale + self._config.yodocus_additional_margin
             raw_image = (
                 page.crop((x0, top, x1, bottom), strict=False)
                 .to_image(self._config.resolution)
@@ -63,7 +66,6 @@ class YodocusImageExtractor(ImageExtractor):
                 embedded_images.append(img)
                 caption_idx += 1
 
-        print(len(embedded_images))
         embedded_images = sorted(embedded_images, key=lambda x: x.size, reverse=True)
         embedded_images = embedded_images[: self._config.max_images_per_page]
 
