@@ -40,7 +40,8 @@ class AzureOpenAiLLM(LLM):
         self,
         system_prompt: str | None,
         user_prompt: str,
-        media: list[LlmMedium],
+        page_image: LlmMedium | None,
+        embedded_images: list[LlmMedium],
         config: LlmGenerationConfig,
     ) -> LlmResponse | None:
         _log.trace(
@@ -54,7 +55,10 @@ class AzureOpenAiLLM(LLM):
             response_format = {"type": "json_object"}
 
         messages = self._assemble_raw_messages(
-            system_prompt=system_prompt, user_prompt=user_prompt, media=media
+            system_prompt=system_prompt,
+            user_prompt=user_prompt,
+            page_image=page_image,
+            embedded_images=embedded_images,
         )
 
         try:
@@ -103,7 +107,8 @@ class AzureOpenAiLLM(LLM):
         self,
         system_prompt: str | None,
         user_prompt: str,
-        media: list[LlmMedium],
+        page_image: LlmMedium | None,
+        embedded_images: list[LlmMedium],
     ) -> list[ChatCompletionMessageParam]:
         messages = []
         if system_prompt is not None:
@@ -111,9 +116,20 @@ class AzureOpenAiLLM(LLM):
             messages.append(system_message)
 
         user_message_content: list[dict] = [{"type": "text", "text": user_prompt}]
-        user_message_content.extend(
-            self._assemble_image_url(medium) for medium in media
-        )
+        if page_image is not None:
+            user_message_content.extend(
+                [
+                    {"type": "text", "text": page_image.description},
+                    self._assemble_image_url(page_image),
+                ]
+            )
+        for ei in embedded_images:
+            user_message_content.extend(
+                [
+                    {"type": "text", "text": ei.description},
+                    self._assemble_image_url(ei),
+                ]
+            )
         user_message = {"role": "user", "content": user_message_content}
         messages.append(user_message)
 

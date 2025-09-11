@@ -125,6 +125,7 @@ class PromptAdditions(BaseModel):
 class LlmMedium(BaseModel):
     image: Medium
     detail_level: Literal["auto", "low", "hight"] = "auto"
+    description: str | None = None
 
 
 class LLM(ABC):
@@ -137,7 +138,8 @@ class LLM(ABC):
         self,
         system_prompt: str | None,
         user_prompt: str,
-        media: list[LlmMedium],
+        page_image: LlmMedium | None,
+        embedded_images: list[LlmMedium],
         config: LlmGenerationConfig,
     ) -> LlmResponse | None:
         pass
