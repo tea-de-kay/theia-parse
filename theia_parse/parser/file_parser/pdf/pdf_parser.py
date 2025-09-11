@@ -1,15 +1,11 @@
-import os
 from collections import deque
 from collections.abc import Iterable
 from pathlib import Path
-from tempfile import TemporaryDirectory
 from typing import Any
 
 import pdf2image
 import pdfplumber
-import pymupdf4llm
 from pdfplumber.page import Page as PdfPage
-from PIL import Image
 
 from theia_parse.llm.__spi__ import (
     LlmApiSettings,
@@ -37,11 +33,12 @@ from theia_parse.model import (
     ParsedDocument,
     RawContentElement,
 )
-from theia_parse.parser.__spi__ import DocumentParserConfig, ImageExtractionConfig
+from theia_parse.parser.__spi__ import DocumentParserConfig
 from theia_parse.parser.file_parser.__spi__ import FileParser
 from theia_parse.parser.file_parser.pdf.embedded_pdf_page_image import (
     EmbeddedPdfPageImage,
 )
+from theia_parse.parser.file_parser.pdf.image_extractor.__spi__ import ImageExtractor
 from theia_parse.util.files import get_md5_sum
 from theia_parse.util.log import LogFactory
 
@@ -60,8 +57,30 @@ class PdfParser(FileParser):
         self._user_prompt_improve = Prompt(PDF_IMPROVE_USER_PROMPT_TEMPLATE)
         self._user_prompt_parse_raw = Prompt(PDF_USER_PARSE_RAW)
         self._json_parser = JsonParser()
+        self._image_extractor: ImageExtractor
+
+    def _init_parse(self, config: DocumentParserConfig) -> None:
+        if config.image_extraction_config.extract_images:
+            if config.image_extraction_config.method == "yodocus":
+                from theia_parse.parser.file_parser.pdf.image_extractor.yodocus_image_extractor import (
+                    YodocusImageExtractor,
+                )
+
+                self._image_extractor = YodocusImageExtractor(
+                    config.image_extraction_config
+                )
+            else:
+                from theia_parse.parser.file_parser.pdf.image_extractor.pymupdf_image_extractor import (
+                    PymupdfImageExtractor,
+                )
+
+                self._image_extractor = PymupdfImageExtractor(
+                    config.image_extraction_config
+                )
 
     def parse(self, path: Path, config: DocumentParserConfig) -> ParsedDocument:
+        self._init_parse(config)
+
         doc = self.parse_hull(path)
         doc.content = [
             page for page in self.parse_paged(path, config) if page is not None
@@ -74,6 +93,8 @@ class PdfParser(FileParser):
         path: Path,
         config: DocumentParserConfig,
     ) -> Iterable[DocumentPage | None]:
+        self._init_parse(config)
+
         headings: deque[HeadingElement] = deque(
             maxlen=config.prompt_config.consider_last_headings_n
         )
@@ -271,13 +292,12 @@ class PdfParser(FileParser):
         id_to_img = {img.id: img for img in embedded_images}
         media: list[Medium] = []
         for element in content:
-            if isinstance(element, ImageElement):
-                if element.medium_id is not None:
-                    img = id_to_img.get(element.medium_id)
-                    if img is not None:
-                        media.append(img.to_medium(description=element.content))
-                    else:
-                        element.medium_id = None
+            if isinstance(element, ImageElement) and element.medium_id is not None:
+                img = id_to_img.get(element.medium_id)
+                if img is not None:
+                    media.append(img.to_medium(description=element.content))
+                else:
+                    element.medium_id = None
 
         return content, media
 
@@ -305,51 +325,9 @@ class PdfParser(FileParser):
         if not image_config.extract_images:
             return full_page_image, []
 
-        embedded_images = self._get_embedded_images(path, page, image_config)
+        embedded_images = self._image_extractor.extract(path, page)
 
         return full_page_image, embedded_images
-
-    @staticmethod
-    def _get_embedded_images(
-        path: Path, page: PdfPage, config: ImageExtractionConfig
-    ) -> list[EmbeddedPdfPageImage]:
-        embedded_images: list[EmbeddedPdfPageImage] = []
-        caption_idx = 1
-
-        with TemporaryDirectory() as temp_dir:
-            # TODO: use markdown
-            pymupdf4llm.to_markdown(
-                path,
-                pages=[page.page_number - 1],  # pdfplumber 1-based, pymupdf 0-based
-                write_images=True,
-                image_path=temp_dir,
-                table_strategy="",
-            )
-
-            for filename in os.listdir(temp_dir):
-                image_path = os.path.join(temp_dir, filename)
-                try:
-                    raw_img = Image.open(image_path)
-                except Exception as e:
-                    _log.warning("Failed to load image {}: {}", filename, e)
-                else:
-                    img = EmbeddedPdfPageImage(
-                        page=page,
-                        raw_image=raw_img,
-                        caption_idx=caption_idx,
-                        config=config,
-                    )
-                    if img.is_relevant:
-                        embedded_images.append(img)
-                        caption_idx += 1
-
-        embedded_images = sorted(embedded_images, key=lambda x: x.size, reverse=True)
-        embedded_images = embedded_images[: config.max_images_per_page]
-
-        for caption_idx, ei in enumerate(embedded_images, start=1):
-            ei.caption_idx = caption_idx
-
-        return embedded_images
 
     def _parse_raw(
         self,

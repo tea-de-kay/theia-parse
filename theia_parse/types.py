@@ -1,5 +1,6 @@
 from typing import Literal
 
 
-ImageFormat = Literal["webp", "png", "jpeg"]
-RawParserTypeName = Literal["default", "llm"]
+type ImageFormat = Literal["webp", "png", "jpeg"]
+type RawParserTypeName = Literal["default", "llm"]
+type ImageExtractionMethod = Literal["pymupdf", "yodocus"]

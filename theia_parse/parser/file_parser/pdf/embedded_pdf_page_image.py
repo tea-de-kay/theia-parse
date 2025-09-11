@@ -55,23 +55,24 @@ class EmbeddedPdfPageImage:
     def size(self) -> float:
         return self.width * self.height
 
-    @property
-    def is_relevant(self) -> bool:
+    def is_relevant(self, resolution: int | None = None) -> bool:
         if self._config.min_size is not None and self.is_smaller_than(
-            self._config.min_size
+            self._config.min_size, resolution
         ):
             return False
 
         if self._config.max_size is not None and self.is_larger_than(
-            self._config.max_size
+            self._config.max_size, resolution
         ):
             return False
 
         return True
 
-    def is_smaller_than(self, size: ImageSize) -> bool:
+    def is_smaller_than(self, size: ImageSize, resolution: int | None) -> bool:
         size = size.to_absolute(
-            total_width=self._page.width, total_height=self._page.height
+            total_width=self._page.width,
+            total_height=self._page.height,
+            resolution=resolution,
         )
         # TODO: or or and
         if self.width < size.width or self.height < size.height:
@@ -79,9 +80,11 @@ class EmbeddedPdfPageImage:
 
         return False
 
-    def is_larger_than(self, size: ImageSize) -> bool:
+    def is_larger_than(self, size: ImageSize, resolution: int | None) -> bool:
         size = size.to_absolute(
-            total_width=self._page.width, total_height=self._page.height
+            total_width=self._page.width,
+            total_height=self._page.height,
+            resolution=resolution,
         )
         # TODO: or or and
         if self.width > size.width or self.height > size.height:

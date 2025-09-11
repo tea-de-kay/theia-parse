@@ -1,8 +1,9 @@
 from __future__ import annotations
 
+from pdfplumber.display import DEFAULT_RESOLUTION
 from pydantic import BaseModel
 
-from theia_parse.types import ImageFormat, RawParserTypeName
+from theia_parse.types import ImageExtractionMethod, ImageFormat, RawParserTypeName
 
 
 T_num = int | float
@@ -17,20 +18,35 @@ class ImageSize(BaseModel):
     width: T_num
     height: T_num
 
-    def to_absolute(self, total_width: T_num, total_height: T_num) -> ImageSize:
+    def to_absolute(
+        self,
+        total_width: T_num,
+        total_height: T_num,
+        resolution: int | None,
+    ) -> ImageSize:
+        scale = resolution / DEFAULT_RESOLUTION if resolution is not None else 1
         width = self.width
         if isinstance(self.width, float):
-            width = int(self.width * total_width)
+            width = int(self.width * total_width * scale)
 
         height = self.height
         if isinstance(self.height, float):
-            height = int(self.height * total_height)
+            height = int(self.height * total_height * scale)
 
         return ImageSize(width=width, height=height)
 
 
 class ImageExtractionConfig(BaseModel):
     extract_images: bool = True
+
+    method: ImageExtractionMethod = "yodocus"
+
+    yodocus_model: str = "yodocus-picture-detection-nano-v1"
+    yodocus_conf_threshold: float = 0.25
+    yodocus_iou_threshold: float = 0.45
+    yodocus_postprocessor_containment_threshold: float = 0.9
+    yodocus_additional_margin: float = 10
+
     min_size: ImageSize | None = ImageSize(width=20, height=20)
     max_size: ImageSize | None = ImageSize(width=0.9, height=0.9)
 
