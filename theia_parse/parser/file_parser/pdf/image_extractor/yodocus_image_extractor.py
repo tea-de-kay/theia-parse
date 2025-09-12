@@ -20,7 +20,7 @@ class YodocusImageExtractor(ImageExtractor):
         super().__init__(config)
         self._detector = Detector(config.yodocus_model)
         self._yodocus_config = DetectionConfig(
-            conf_threshold=config.yodocus_conf_threshold,
+            confidence_threshold=config.yodocus_confidence_threshold,
             iou_threshold=config.yodocus_iou_threshold,
             visualize=False,
         )

@@ -43,7 +43,7 @@ class ImageExtractionConfig(BaseModel):
 
     yodocus_model: str = "tea-de-kay/yodocus-picture-detection-nano-v1"
     """Path to model directory or huggingface hub model identifier."""
-    yodocus_conf_threshold: float = 0.25
+    yodocus_confidence_threshold: float = 0.25
     yodocus_iou_threshold: float = 0.45
     yodocus_postprocessor_containment_threshold: float = 0.9
     yodocus_additional_margin: float = 10

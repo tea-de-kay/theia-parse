@@ -17,7 +17,7 @@ tqdm = "^4.66.0"
 pdf2image = "^1.17.0"
 
 pymupdf4llm = { version = "^0.0.26", optional = true}
-yodocus = { git = "https://github.com/tea-de-kay/yodocus.git", tag = "0.1.6", optional = true}
+yodocus = { git = "https://github.com/tea-de-kay/yodocus.git", tag = "0.1.7", optional = true}
 huggingface-hub = { version = "0.34.*", optional = true}
 
 [tool.poetry.extras]
