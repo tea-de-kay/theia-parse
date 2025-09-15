@@ -70,6 +70,11 @@ class PromptConfig(BaseModel):
     consider_last_headings_n: int = 10
     consider_last_parsed_pages_n: int = 0
     include_raw_extracted_text: bool = True
+    pdf_extract_content_system_prompt_template: str | None = None
+    pdf_extract_content_user_prompt_template: str | None = None
+    pdf_improve_system_prompt_template: str | None = None
+    pdf_improve_user_prompt_template: str | None = None
+    pdf_user_parse_raw: str | None = None
 
 
 class RawParserConfig(BaseModel):
@@ -85,6 +90,9 @@ class DocumentParserConfig(BaseModel):
     raw_parser_config: RawParserConfig = RawParserConfig()
     prompt_config: PromptConfig = PromptConfig()
     image_extraction_config: ImageExtractionConfig = ImageExtractionConfig()
+
+
+DEFAULT_DOCUMENT_PARSER_CONFIG = DocumentParserConfig()
 
 
 class DirectoryParserConfig(BaseModel):

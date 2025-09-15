@@ -47,20 +47,36 @@ _log = LogFactory.get_logger()
 
 
 class PdfParser(FileParser):
-    def __init__(self, llm_api_settings: LlmApiSettings) -> None:
-        super().__init__(llm_api_settings)
+    def __init__(
+        self,
+        llm_api_settings: LlmApiSettings,
+        config: DocumentParserConfig,
+    ) -> None:
+        super().__init__(llm_api_settings, config)
+
         self._system_prompt_extraction = Prompt(
-            PDF_EXTRACT_CONTENT_SYSTEM_PROMPT_TEMPLATE
+            self._config.prompt_config.pdf_extract_content_system_prompt_template
+            or PDF_EXTRACT_CONTENT_SYSTEM_PROMPT_TEMPLATE
         )
-        self._user_prompt_extraction = Prompt(PDF_EXTRACT_CONTENT_USER_PROMPT_TEMPLATE)
-        self._system_prompt_improve = Prompt(PDF_IMPROVE_SYSTEM_PROMPT_TEMPLATE)
-        self._user_prompt_improve = Prompt(PDF_IMPROVE_USER_PROMPT_TEMPLATE)
-        self._user_prompt_parse_raw = Prompt(PDF_USER_PARSE_RAW)
+        self._user_prompt_extraction = Prompt(
+            self._config.prompt_config.pdf_extract_content_user_prompt_template
+            or PDF_EXTRACT_CONTENT_USER_PROMPT_TEMPLATE
+        )
+        self._system_prompt_improve = Prompt(
+            self._config.prompt_config.pdf_improve_system_prompt_template
+            or PDF_IMPROVE_SYSTEM_PROMPT_TEMPLATE
+        )
+        self._user_prompt_improve = Prompt(
+            self._config.prompt_config.pdf_improve_user_prompt_template
+            or PDF_IMPROVE_USER_PROMPT_TEMPLATE
+        )
+        self._user_prompt_parse_raw = Prompt(
+            self._config.prompt_config.pdf_user_parse_raw or PDF_USER_PARSE_RAW
+        )
+
         self._json_parser = JsonParser()
         self._image_extractor: ImageExtractor
-
-    def _init_parse(self, config: DocumentParserConfig) -> None:
-        if config.image_extraction_config.extract_images:
+        if self._config.image_extraction_config.extract_images:
             if config.image_extraction_config.method == "yodocus":
                 from theia_parse.parser.file_parser.pdf.image_extractor.yodocus_image_extractor import (
                     YodocusImageExtractor,
@@ -78,35 +94,23 @@ class PdfParser(FileParser):
                     config.image_extraction_config
                 )
 
-    def parse(self, path: Path, config: DocumentParserConfig) -> ParsedDocument:
-        self._init_parse(config)
-
+    def parse(self, path: Path) -> ParsedDocument:
         doc = self.parse_hull(path)
-        doc.content = [
-            page for page in self.parse_paged(path, config) if page is not None
-        ]
+        doc.content = [page for page in self.parse_paged(path) if page is not None]
 
         return doc
 
-    def parse_paged(
-        self,
-        path: Path,
-        config: DocumentParserConfig,
-    ) -> Iterable[DocumentPage | None]:
-        self._init_parse(config)
-
+    def parse_paged(self, path: Path) -> Iterable[DocumentPage | None]:
         headings: deque[HeadingElement] = deque(
-            maxlen=config.prompt_config.consider_last_headings_n
+            maxlen=self._config.prompt_config.consider_last_headings_n
         )
         parsed_pages: deque[DocumentPage] = deque(
-            maxlen=config.prompt_config.consider_last_parsed_pages_n
+            maxlen=self._config.prompt_config.consider_last_parsed_pages_n
         )
 
         with pdfplumber.open(path) as pdf:
             for page in pdf.pages:
-                parsed_page = self._parse_page(
-                    path, page, headings, parsed_pages, config
-                )
+                parsed_page = self._parse_page(path, page, headings, parsed_pages)
                 if parsed_page is not None:
                     headings.extend(parsed_page.get_headings())
                     parsed_pages.append(parsed_page)
@@ -120,17 +124,15 @@ class PdfParser(FileParser):
         page: PdfPage,
         headings: deque[HeadingElement],
         parsed_pages: deque[DocumentPage],
-        config: DocumentParserConfig,
     ) -> DocumentPage | None:
-        page_image, embedded_images = self._get_images(path, page, config)
+        page_image, embedded_images = self._get_images(path, page)
 
         usage = LlmUsage()
 
-        raw_extracted_text, raw_usage = self._parse_raw(page, page_image, config)
+        raw_extracted_text, raw_usage = self._parse_raw(page, page_image)
         usage += raw_usage
 
         response = self._call_llm(
-            config=config,
             raw_extracted_text=raw_extracted_text,
             headings=headings,
             parsed_pages=parsed_pages,
@@ -145,9 +147,8 @@ class PdfParser(FileParser):
 
         usage += response.usage
 
-        if config.post_improve:
+        if self._config.post_improve:
             improved = self._improve_parsed(
-                config=config,
                 raw_parsed=response.raw,
                 raw_extracted_text=raw_extracted_text,
                 page_image=page_image,
@@ -187,7 +188,7 @@ class PdfParser(FileParser):
             path=str(path), content=[], md5_sum=md5_sum, metadata=metadata
         )
 
-    def get_number_of_pages(self, path: Path, config: DocumentParserConfig) -> int:
+    def get_number_of_pages(self, path: Path) -> int:
         try:
             pdf = pdfplumber.open(path)
             return len(pdf.pages)
@@ -198,17 +199,16 @@ class PdfParser(FileParser):
 
     def _call_llm(
         self,
-        config: DocumentParserConfig,
         raw_extracted_text: str,
         headings: deque[HeadingElement],
         parsed_pages: deque[DocumentPage],
         page_image: Medium | None,
         embedded_images: list[Medium],
     ) -> LlmResponse | None:
-        image_config = config.image_extraction_config
+        image_config = self._config.image_extraction_config
 
         prompt_additions = PromptAdditions.create(
-            config=config,
+            config=self._config,
             raw_extracted_text=raw_extracted_text,
             previous_headings=headings,
             previous_parsed_pages=parsed_pages,
@@ -242,13 +242,12 @@ class PdfParser(FileParser):
 
     def _improve_parsed(
         self,
-        config: DocumentParserConfig,
         raw_parsed: str,
         raw_extracted_text: str,
         page_image: Medium | None,
     ) -> LlmResponse | None:
         prompt_additions = PromptAdditions.create(
-            config=config,
+            config=self._config,
             raw_extracted_text=raw_extracted_text,
             raw_parsed=raw_parsed,
         )
@@ -311,12 +310,11 @@ class PdfParser(FileParser):
         self,
         path: Path,
         page: PdfPage,
-        config: DocumentParserConfig,
     ) -> tuple[Medium | None, list[EmbeddedPdfPageImage]]:
-        if not config.use_vision:
+        if not self._config.use_vision:
             return None, []
 
-        image_config = config.image_extraction_config
+        image_config = self._config.image_extraction_config
         full_page_image = Medium.create_from_image(
             id="",
             image_format=image_config.image_format,
@@ -340,13 +338,12 @@ class PdfParser(FileParser):
         self,
         page: PdfPage,
         page_image: Medium | None,
-        config: DocumentParserConfig,
     ) -> tuple[str, LlmUsage]:
         raw = page.extract_text()
         usage = LlmUsage()
-        if config.raw_parser_config.parser_type == "llm":
+        if self._config.raw_parser_config.parser_type == "llm":
             prompt_additions = PromptAdditions.create(
-                config=config,
+                config=self._config,
                 raw_extracted_text=raw,
             )
 
