@@ -52,7 +52,7 @@ class YodocusImageExtractor(ImageExtractor):
             x1 = box.x1 / scale + self._config.yodocus_additional_margin
             bottom = box.y1 / scale + self._config.yodocus_additional_margin
             raw_image = (
-                page.crop((x0, top, x1, bottom), strict=False)
+                page.crop((x0, top, x1, bottom), relative=True, strict=False)
                 .to_image(self._config.resolution)
                 .original
             )
