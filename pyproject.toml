@@ -7,16 +7,16 @@ authors = [ "tea-de-kay", ]
 
 [tool.poetry.dependencies]
 python = "~=3.12.0"
-Jinja2 = "^3.1.4"
-openai = "^1.48.0"
-pdfplumber = "^0.11.5"
-pydantic = "^2.9.2"
-pydantic-settings = "^2.5.2"
-loguru = "^0.7.2"
-tqdm = "^4.66.0"
-pdf2image = "^1.17.0"
+Jinja2 = "3.*"
+openai = "2.*"
+pdfplumber = "0.*"
+pydantic = "2.*"
+pydantic-settings = "2.*"
+loguru = "0.7.*"
+tqdm = "4.*"
+pdf2image = "1.*"
 
-pymupdf4llm = { version = "^0.0.26", optional = true}
+pymupdf4llm = { version = "0.0.*", optional = true}
 yodocus = { git = "https://github.com/tea-de-kay/yodocus.git", tag = "0.1.7", optional = true}
 huggingface-hub = { version = "0.34.*", optional = true}
 
