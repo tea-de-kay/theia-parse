@@ -2,7 +2,7 @@ from collections.abc import Iterator
 from contextlib import contextmanager
 from typing import cast
 
-from openai import NOT_GIVEN, AzureOpenAI, NotGiven
+from openai import AzureOpenAI, Omit, omit
 from openai.types.chat.chat_completion_message_param import ChatCompletionMessageParam
 from openai.types.chat.completion_create_params import ResponseFormat
 
@@ -50,7 +50,7 @@ class AzureOpenAiLLM(LLM):
             user_prompt,
         )
 
-        response_format: ResponseFormat | NotGiven = NOT_GIVEN
+        response_format: ResponseFormat | Omit = omit
         if config.json_mode:
             response_format = {"type": "json_object"}
 
