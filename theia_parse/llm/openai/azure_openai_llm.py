@@ -66,7 +66,7 @@ class AzureOpenAiLLM(LLM):
                 response = client.chat.completions.create(
                     model=self._api_settings.model,
                     messages=messages,
-                    temperature=config.temperature,
+                    temperature=config.temperature or omit,
                     max_completion_tokens=config.max_tokens,
                     response_format=response_format,
                 )
