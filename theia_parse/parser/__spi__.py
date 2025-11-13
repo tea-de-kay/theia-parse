@@ -82,6 +82,12 @@ class RawParserConfig(BaseModel):
     llm_use_vision: bool = False
 
 
+class LlmGenerationConfig(BaseModel):
+    temperature: float | None = 0
+    max_tokens: int | None = None
+    json_mode: bool = True
+
+
 class DocumentParserConfig(BaseModel):
     verbose: bool = True
     save_file: bool = False
@@ -90,6 +96,7 @@ class DocumentParserConfig(BaseModel):
     raw_parser_config: RawParserConfig = RawParserConfig()
     prompt_config: PromptConfig = PromptConfig()
     image_extraction_config: ImageExtractionConfig = ImageExtractionConfig()
+    generation_config: LlmGenerationConfig = LlmGenerationConfig()
 
 
 DEFAULT_DOCUMENT_PARSER_CONFIG = DocumentParserConfig()

@@ -14,7 +14,7 @@ from theia_parse.model import (
     LlmUsage,
     Medium,
 )
-from theia_parse.parser.__spi__ import DocumentParserConfig, PromptConfig
+from theia_parse.parser.__spi__ import DocumentParserConfig, LlmGenerationConfig
 
 
 LlmApiProvider = Literal["azure_openai"]
@@ -55,12 +55,6 @@ class LlmExtractionResult(BaseModel):
     content: list[ContentElement] | None = None
     usage: LlmUsage = LlmUsage()
     error: bool = False
-
-
-class LlmGenerationConfig(BaseModel):
-    temperature: float = 0
-    max_tokens: int | None = None
-    json_mode: bool = True
 
 
 class PromptAdditions(BaseModel):

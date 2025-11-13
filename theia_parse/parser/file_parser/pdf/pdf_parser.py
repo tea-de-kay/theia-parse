@@ -9,7 +9,6 @@ from pdfplumber.page import Page as PdfPage
 
 from theia_parse.llm.__spi__ import (
     LlmApiSettings,
-    LlmGenerationConfig,
     LlmMedium,
     LlmResponse,
     Prompt,
@@ -33,7 +32,7 @@ from theia_parse.model import (
     ParsedDocument,
     RawContentElement,
 )
-from theia_parse.parser.__spi__ import DocumentParserConfig
+from theia_parse.parser.__spi__ import DocumentParserConfig, LlmGenerationConfig
 from theia_parse.parser.file_parser.__spi__ import FileParser
 from theia_parse.parser.file_parser.pdf.embedded_pdf_page_image import (
     EmbeddedPdfPageImage,

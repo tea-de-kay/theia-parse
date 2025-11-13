@@ -9,11 +9,11 @@ from openai.types.chat.completion_create_params import ResponseFormat
 from theia_parse.llm.__spi__ import (
     LLM,
     LlmApiSettings,
-    LlmGenerationConfig,
     LlmMedium,
     LlmResponse,
 )
 from theia_parse.model import LlmUsage
+from theia_parse.parser.__spi__ import LlmGenerationConfig
 from theia_parse.util.log import LogFactory
 
 
@@ -67,7 +67,7 @@ class AzureOpenAiLLM(LLM):
                     model=self._api_settings.model,
                     messages=messages,
                     temperature=config.temperature,
-                    max_tokens=config.max_tokens,
+                    max_completion_tokens=config.max_tokens,
                     response_format=response_format,
                 )
 
