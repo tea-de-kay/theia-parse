@@ -100,7 +100,7 @@ class PdfParser(FileParser):
 
         return doc
 
-    def parse_paged(self, path: Path) -> Iterable[DocumentPage | None]:
+    def parse_paged(self, path: Path) -> Iterable[DocumentPage]:
         headings: deque[HeadingElement] = deque(
             maxlen=self._config.prompt_config.consider_last_headings_n
         )
@@ -124,7 +124,7 @@ class PdfParser(FileParser):
         page: PdfPage,
         headings: deque[HeadingElement],
         parsed_pages: deque[DocumentPage],
-    ) -> DocumentPage | None:
+    ) -> DocumentPage:
         page_image, embedded_images = self._get_images(path, page)
 
         usage = LlmUsage()
@@ -143,7 +143,15 @@ class PdfParser(FileParser):
             ],
         )
         if response is None:
-            return
+            return DocumentPage(
+                page_number=page.page_number,
+                content=[],
+                media=[],
+                raw_llm_response="",
+                raw_extracted_text=raw_extracted_text,
+                token_usage=usage,
+                error=True,
+            )
 
         usage += response.usage
 
@@ -159,11 +167,27 @@ class PdfParser(FileParser):
 
         parsed_response = self._json_parser.parse(response.raw)
         if parsed_response is None:
-            return
+            return DocumentPage(
+                page_number=page.page_number,
+                content=[],
+                media=[],
+                raw_llm_response=response.raw,
+                raw_extracted_text=raw_extracted_text,
+                token_usage=usage,
+                error=True,
+            )
 
         content_blocks = parsed_response.get("page_content_blocks")
         if content_blocks is None:
-            return
+            return DocumentPage(
+                page_number=page.page_number,
+                content=[],
+                media=[],
+                raw_llm_response=response.raw,
+                raw_extracted_text=raw_extracted_text,
+                token_usage=usage,
+                error=True,
+            )
 
         content, error = self._get_content_list(content_blocks, embedded_images)
 

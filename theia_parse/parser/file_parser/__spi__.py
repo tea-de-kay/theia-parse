@@ -27,7 +27,7 @@ class FileParser(ABC):
         pass
 
     @abstractmethod
-    def parse_paged(self, path: Path) -> Iterable[DocumentPage | None]:
+    def parse_paged(self, path: Path) -> Iterable[DocumentPage]:
         pass
 
     @abstractmethod
