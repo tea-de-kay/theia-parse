@@ -32,7 +32,7 @@ from theia_parse.model import (
     ParsedDocument,
     RawContentElement,
 )
-from theia_parse.parser.__spi__ import DocumentParserConfig, LlmGenerationConfig
+from theia_parse.parser.__spi__ import DocumentParserConfig
 from theia_parse.parser.file_parser.__spi__ import FileParser
 from theia_parse.parser.file_parser.pdf.embedded_pdf_page_image import (
     EmbeddedPdfPageImage,
@@ -260,7 +260,7 @@ class PdfParser(FileParser):
                 else None
             ),
             embedded_images=images,
-            config=LlmGenerationConfig(),
+            config=self._config.generation_config,
         )
 
     def _improve_parsed(
@@ -287,7 +287,7 @@ class PdfParser(FileParser):
                 else None
             ),
             embedded_images=[],
-            config=LlmGenerationConfig(),
+            config=self._config.generation_config,
         )
 
     def _get_content_list(
@@ -371,6 +371,9 @@ class PdfParser(FileParser):
             )
 
             user_prompt = self._user_prompt_parse_raw.render(prompt_additions.to_dict())
+            generation_config = self._config.generation_config.model_copy(
+                deep=True, update={"json_mode": False}
+            )
 
             response = self._llm.generate(
                 system_prompt=None,
@@ -381,7 +384,7 @@ class PdfParser(FileParser):
                     else None
                 ),
                 embedded_images=[],
-                config=LlmGenerationConfig(json_mode=False),
+                config=generation_config,
             )
 
             if response is not None:
