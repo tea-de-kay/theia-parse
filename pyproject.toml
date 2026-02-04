@@ -16,7 +16,7 @@ loguru = "0.7.*"
 tqdm = "4.*"
 pdf2image = "1.*"
 
-pymupdf4llm = { version = "0.0.*", optional = true}
+pymupdf4llm = { version = "0.*", optional = true}
 yodocus = { git = "https://github.com/tea-de-kay/yodocus.git", tag = "0.1.8", optional = true}
 huggingface-hub = { version = ">=0.34", optional = true}
 
