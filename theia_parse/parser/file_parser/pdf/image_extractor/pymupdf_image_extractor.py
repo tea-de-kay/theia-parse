@@ -29,6 +29,7 @@ class PymupdfImageExtractor(ImageExtractor):
                 write_images=True,
                 image_path=temp_dir,
                 table_strategy="",
+                dpi=self._config.resolution,
             )
 
             for filename in os.listdir(temp_dir):
@@ -45,7 +46,7 @@ class PymupdfImageExtractor(ImageExtractor):
                         config=self._config,
                     )
                     # TODO: check resolution
-                    if img.is_relevant():
+                    if img.is_relevant(self._config.resolution):
                         embedded_images.append(img)
                         caption_idx += 1
 
