@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "theia-parse"
-version = "0.8.7"
+version = "0.8.8"
 description = "Document Parser via Multimodal LLMs"
 license = "Apache-2.0"
 authors = [ "tea-de-kay", ]
