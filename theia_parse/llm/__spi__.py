@@ -22,7 +22,7 @@ LlmApiProvider = Literal["azure_openai"]
 
 class LlmApiSettings(BaseModel):
     provider: LlmApiProvider = "azure_openai"
-    api_version: str
+    api_version: str = ""
     model: str
     endpoint: str
     key: str

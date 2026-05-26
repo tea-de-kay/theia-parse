@@ -1,8 +1,9 @@
 from collections.abc import Iterator
 from contextlib import contextmanager
 from typing import cast
+from urllib.parse import urljoin
 
-from openai import AzureOpenAI, Omit, omit
+from openai import Omit, OpenAI, omit
 from openai.types.chat.chat_completion_message_param import ChatCompletionMessageParam
 from openai.types.chat.completion_create_params import ResponseFormat
 
@@ -21,16 +22,19 @@ _log = LogFactory.get_logger()
 
 
 class AzureOpenAiLLM(LLM):
+    _OPENAI_API_V1_SUFFIX: str = "openai/v1"
+
     def __init__(self, api_settings: LlmApiSettings) -> None:
         self._api_settings = api_settings
 
     @contextmanager
-    def _get_client(self) -> Iterator[AzureOpenAI]:
-        client = AzureOpenAI(
-            azure_endpoint=self._api_settings.endpoint,
-            api_version=self._api_settings.api_version,
-            api_key=self._api_settings.key,
-        )
+    def _get_client(self) -> Iterator[OpenAI]:
+        url = cast(str, self._api_settings.endpoint)
+        if not url.endswith(self._OPENAI_API_V1_SUFFIX):
+            url = urljoin(url, self._OPENAI_API_V1_SUFFIX)
+        api_key = cast(str, self._api_settings.key)
+
+        client = OpenAI(base_url=url, api_key=api_key)
         try:
             yield client
         finally:
